@@ -181,6 +181,21 @@
   }
   .count.full { background: var(--blue-soft); color: var(--blue); }
 
+  .who { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+  @media (min-width: 480px) { .who { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .who label { position: relative; cursor: pointer; }
+  .who input { position: absolute; opacity: 0; pointer-events: none; }
+  .who span {
+    display: flex; align-items: center; justify-content: center;
+    height: 46px; padding: 0 8px;
+    border-radius: 14px; border: 2px solid transparent;
+    background: var(--tile); color: var(--muted);
+    font-size: 14.5px; font-weight: 700; text-align: center;
+    transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .who input:checked + span { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+  .who input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field { display: block; margin-bottom: 12px; }
   .field > span { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
@@ -535,8 +550,9 @@
     <!-- 투표 화면 -->
     <form id="voteView" novalidate>
       <section class="card">
-        <h2><span class="step">1</span>인적사항</h2>
-        <div class="row2">
+        <h2><span class="step">1</span>누구신가요?</h2>
+        <div class="who" id="who" role="radiogroup" aria-label="구분"></div>
+        <div class="row2" id="cadetFields">
           <label class="field">
             <span>기수</span>
             <select id="gisu"><option value="">선택</option></select>
@@ -550,7 +566,11 @@
           <span>이름</span>
           <input id="name" type="text" maxlength="20" placeholder="홍길동" autocomplete="name" enterkeyhint="done">
         </label>
-        <p class="hint">마음이 바뀌면 다시 투표할 수 있어요. 같은 사람의 마지막 투표만 반영됩니다.</p>
+        <label class="field" id="phoneField" hidden>
+          <span>휴대폰 번호 뒷 4자리</span>
+          <input id="phone" type="text" inputmode="numeric" maxlength="4" placeholder="예: 1234" autocomplete="off" enterkeyhint="done">
+        </label>
+        <p class="hint" id="whoHint"></p>
       </section>
 
       <section class="card">
@@ -643,6 +663,9 @@ const CONFIG = {
 
   maxPicks: 2,
 
+  // 투표자 구분. 첫 번째(생도)는 기수·중대를, 나머지는 휴대폰 뒷 4자리를 입력받습니다.
+  voterTypes: ['생도', '간부·군무원', '병사', '외부인'],
+
   // 실제 재학 기수 / 중대 편성에 맞게 수정하세요.
   classes: ['75기', '76기', '77기', '78기'],
   companies: Array.from({ length: 8 }, (_, i) => `${i + 1}중대`),
@@ -686,6 +709,7 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-wid
 const params = new URLSearchParams(location.search);
 const BOARD = params.has('board');
 
+const CADET = CONFIG.voterTypes[0];
 const BOOTHS = CONFIG.booths.map((b, i) => ({ ...b, emoji: b.emoji || '🍽️', no: i + 1 }));
 const boothByName = Object.fromEntries(BOOTHS.map((b) => [b.name, b]));
 
@@ -693,6 +717,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   banner: $('banner'), tabs: document.querySelectorAll('.tab'),
   voteArea: $('voteArea'), voteView: $('voteView'), doneView: $('doneView'), closedView: $('closedView'),
+  who: $('who'), cadetFields: $('cadetFields'), phoneField: $('phoneField'), phone: $('phone'), whoHint: $('whoHint'),
   gisu: $('gisu'), company: $('company'), name: $('name'), booths: $('booths'), count: $('count'),
   bar: $('bar'), pickChips: $('pickChips'), submitBtn: $('submitBtn'), sheet: $('sheet'), changeBtn: $('changeBtn'),
   confirmSummary: $('confirmSummary'), ticketWho: $('ticketWho'), ticketPicks: $('ticketPicks'),
@@ -795,6 +820,42 @@ function syncBar() {
 els.tabs.forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
 document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.goto)));
 
+/* ───────────── 투표자 구분 ───────────── */
+
+function renderWho() {
+  CONFIG.voterTypes.forEach((type, i) => {
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'who';
+    input.value = type;
+    input.checked = i === 0;
+    const label = el('label');
+    label.append(input, el('span', null, type));
+    els.who.append(label);
+  });
+  els.who.addEventListener('change', applyType);
+}
+
+const currentType = () => els.who.querySelector('input:checked')?.value || CADET;
+const isCadet = (v) => !v.type || v.type === CADET;
+const voterLabel = (v) => (isCadet(v) ? `${v.gisu} ${v.company} ${v.name}` : `${v.type} ${v.name}`);
+
+function setType(type) {
+  const radio = [...els.who.querySelectorAll('input')].find((r) => r.value === type);
+  if (radio) radio.checked = true;
+  applyType();
+}
+
+function applyType() {
+  const cadet = currentType() === CADET;
+  els.cadetFields.hidden = !cadet;
+  els.phoneField.hidden = cadet;
+  els.whoHint.textContent = cadet
+    ? '마음이 바뀌면 다시 투표할 수 있어요. 같은 사람의 마지막 투표만 반영됩니다.'
+    : '휴대폰 뒷번호는 같은 사람인지 확인하는 데만 쓰여요. 다시 투표하면 마지막 투표만 반영됩니다.';
+  document.querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
+}
+
 /* ───────────── 투표 ───────────── */
 
 function renderBooths() {
@@ -874,19 +935,25 @@ els.booths.addEventListener('change', (e) => {
 });
 
 function readForm() {
+  const type = currentType();
+  const cadet = type === CADET;
   return {
-    gisu: els.gisu.value,
-    company: els.company.value,
+    type,
+    gisu: cadet ? els.gisu.value : '',
+    company: cadet ? els.company.value : '',
+    phone: cadet ? '' : els.phone.value.trim(),
     name: els.name.value.trim().replace(/\s+/g, ' '),
     booths: [...picks],
   };
 }
 
 function validate(v) {
+  const cadet = isCadet(v);
   const checks = [
-    [els.gisu, !v.gisu, '기수를 선택해 주세요'],
-    [els.company, !v.company, '중대를 선택해 주세요'],
+    [els.gisu, cadet && !v.gisu, '기수를 선택해 주세요'],
+    [els.company, cadet && !v.company, '중대를 선택해 주세요'],
     [els.name, v.name.length < 2, '이름을 입력해 주세요'],
+    [els.phone, !cadet && !/^\d{4}$/.test(v.phone), '휴대폰 번호 뒷 4자리를 입력해 주세요'],
   ];
   document.querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
   const failed = checks.find(([, bad]) => bad);
@@ -902,7 +969,8 @@ function validate(v) {
 function renderSummary(dl, v) {
   dl.replaceChildren();
   const rows = [
-    ['투표자', `${v.gisu} ${v.company} ${v.name}`],
+    ['투표자', voterLabel(v)],
+    ...(isCadet(v) ? [] : [['뒷번호', v.phone]]),
     ...v.booths.map((b, i) => [`선택 ${i + 1}`, `${boothByName[b]?.emoji || '🍽️'} ${b}`]),
   ];
   for (const [k, val] of rows) dl.append(el('dt', null, k), el('dd', null, val));
@@ -920,9 +988,11 @@ async function sendVote(v) {
     await new Promise((r) => setTimeout(r, 700)); // 테스트 모드
     return;
   }
+  // 생도가 아니면 기수 칸에 구분, 중대 칸에 휴대폰 뒷번호를 넣어 같은 사람을 구분함
+  const cadet = isCadet(v);
   const body = new URLSearchParams();
-  body.append(form.ids['기수'], v.gisu);
-  body.append(form.ids['중대'], v.company);
+  body.append(form.ids['기수'], cadet ? v.gisu : v.type);
+  body.append(form.ids['중대'], cadet ? v.company : `뒷번호 ${v.phone}`);
   body.append(form.ids['이름'], v.name);
   body.append(form.ids['부스1'], v.booths[0] || '');
   body.append(form.ids['부스2'], v.booths[1] || '');
@@ -972,7 +1042,7 @@ els.confirmBtn.addEventListener('click', async () => {
 
 function showDone(record, changed) {
   $('doneTitle').textContent = changed ? '투표를 변경했어요!' : '투표 완료!';
-  els.ticketWho.textContent = `${record.gisu} ${record.company} ${record.name}`;
+  els.ticketWho.textContent = voterLabel(record);
   els.ticketPicks.replaceChildren(...(record.booths || []).map((name) => {
     const b = boothByName[name] || { name, emoji: '🍽️' };
     const text = el('div');
@@ -1005,8 +1075,10 @@ function celebrate() {
 els.changeBtn.addEventListener('click', () => {
   const saved = storage.get();
   if (saved) {
-    els.gisu.value = saved.gisu;
-    els.company.value = saved.company;
+    setType(saved.type || CADET);
+    els.gisu.value = saved.gisu || '';
+    els.company.value = saved.company || '';
+    els.phone.value = saved.phone || '';
     els.name.value = saved.name;
     setPicks(saved.booths || []);
   }
@@ -1217,14 +1289,17 @@ function init() {
   if (formError) showBanner(formError, true);
   else if (!form) showBanner('테스트 모드 — 구글폼이 연결되지 않아 투표가 실제로 저장되지 않습니다.');
 
+  renderWho();
+  applyType();
   fillSelect(els.gisu, CONFIG.classes);
   fillSelect(els.company, CONFIG.companies);
   renderBooths();
   updatePicks();
 
-  for (const input of [els.gisu, els.company, els.name]) {
+  for (const input of [els.gisu, els.company, els.name, els.phone]) {
     input.addEventListener('input', () => input.closest('.field').classList.remove('invalid'));
   }
+  els.phone.addEventListener('input', () => { els.phone.value = els.phone.value.replace(/\D/g, '').slice(0, 4); });
   els.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); els.name.blur(); } });
   window.addEventListener('resize', syncBar);
 
