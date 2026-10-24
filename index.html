@@ -181,8 +181,7 @@
   }
   .count.full { background: var(--blue-soft); color: var(--blue); }
 
-  .who { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-  @media (min-width: 480px) { .who { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .who { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 16px; }
   .who label { position: relative; cursor: pointer; }
   .who input { position: absolute; opacity: 0; pointer-events: none; }
   .who span {
@@ -221,6 +220,7 @@
   .field select:focus, .field input:focus { border-color: var(--blue); background-color: var(--card); }
   .field.invalid select, .field.invalid input { border-color: var(--danger); }
   .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .hint b { color: var(--blue); }
 
   /* ───── 부스 타일 ───── */
   .tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -664,7 +664,12 @@ const CONFIG = {
   maxPicks: 2,
 
   // 투표자 구분. 첫 번째(생도)는 기수·중대를, 나머지는 휴대폰 뒷 4자리를 입력받습니다.
-  voterTypes: ['생도', '간부·군무원', '병사', '외부인'],
+  // note 는 그 구분을 골랐을 때 아래에 보이는 안내 문구입니다.
+  voterTypes: [
+    { label: '생도' },
+    { label: '장병', note: '장교·부사관·병사·군무원 모두 여기를 골라주세요.' },
+    { label: '외부인', note: '가족, 친구, 방문객 모두 환영해요!' },
+  ],
 
   // 실제 재학 기수 / 중대 편성에 맞게 수정하세요.
   classes: ['75기', '76기', '77기', '78기'],
@@ -709,7 +714,7 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-wid
 const params = new URLSearchParams(location.search);
 const BOARD = params.has('board');
 
-const CADET = CONFIG.voterTypes[0];
+const CADET = CONFIG.voterTypes[0].label;
 const BOOTHS = CONFIG.booths.map((b, i) => ({ ...b, emoji: b.emoji || '🍽️', no: i + 1 }));
 const boothByName = Object.fromEntries(BOOTHS.map((b) => [b.name, b]));
 
@@ -827,10 +832,10 @@ function renderWho() {
     const input = el('input');
     input.type = 'radio';
     input.name = 'who';
-    input.value = type;
+    input.value = type.label;
     input.checked = i === 0;
     const label = el('label');
-    label.append(input, el('span', null, type));
+    label.append(input, el('span', null, type.label));
     els.who.append(label);
   });
   els.who.addEventListener('change', applyType);
@@ -847,12 +852,15 @@ function setType(type) {
 }
 
 function applyType() {
-  const cadet = currentType() === CADET;
+  const type = currentType();
+  const cadet = type === CADET;
+  const note = CONFIG.voterTypes.find((t) => t.label === type)?.note;
   els.cadetFields.hidden = !cadet;
   els.phoneField.hidden = cadet;
   els.whoHint.textContent = cadet
     ? '마음이 바뀌면 다시 투표할 수 있어요. 같은 사람의 마지막 투표만 반영됩니다.'
     : '휴대폰 뒷번호는 같은 사람인지 확인하는 데만 쓰여요. 다시 투표하면 마지막 투표만 반영됩니다.';
+  if (note) els.whoHint.replaceChildren(el('b', null, note), el('br'), els.whoHint.textContent);
   document.querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
 }
 
