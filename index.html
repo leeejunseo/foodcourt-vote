@@ -478,7 +478,7 @@ const CONFIG = {
 
   // 실시간 순위: Apps Script 웹 앱 주소 (https://script.google.com/macros/s/.../exec)
   // 비워두면 순위 탭에 '준비 중' 안내만 표시됩니다.
-  liveUrl: '',
+  liveUrl: 'https://script.google.com/macros/s/AKfycbz2oLWZr6bsaS4V8jWgd4hCh8DpdW7KOPRAA9ZIV-TJvWwgWZjX4CVK317f9PsIRF-1/exec',
   liveRefreshSec: 20,
 
   maxPicks: 2,
@@ -829,7 +829,7 @@ document.addEventListener('visibilitychange', () => {
 async function fetchLive() {
   if (!CONFIG.liveUrl) return { notConnected: true };
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
+  const timer = setTimeout(() => ctrl.abort(), 25000); // Apps Script는 첫 요청이 10초 가까이 걸릴 수 있음
   try {
     const res = await fetch(CONFIG.liveUrl, { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) throw new Error(res.status);
