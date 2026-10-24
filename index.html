@@ -1083,7 +1083,11 @@ function renderSummary(dl, v) {
   for (const [k, val] of rows) dl.append(el('dt', null, k), el('dd', null, val));
 }
 
+// 확인창을 여는 순간 마감 여부를 미리 조회해 두고, 제출할 때 결과를 봄
+let preCheck = Promise.resolve(null);
+
 function openSheet(v) {
+  preCheck = CONFIG.liveUrl ? fetchLive().catch(() => null) : Promise.resolve(null);
   renderSummary(els.confirmSummary, v);
   // 개인 폰에서 다른 사람으로 다시 투표하면 앞사람 표가 사라진다는 것을 미리 알림
   const saved = STAFF || !DEVICE_ON ? null : storage.get();
@@ -1139,6 +1143,13 @@ els.confirmBtn.addEventListener('click', async () => {
   els.confirmBtn.disabled = els.cancelBtn.disabled = true;
   els.confirmBtn.replaceChildren(el('span', 'spinner'), '제출 중…');
   try {
+    // 그사이 운영본부가 마감했으면 제출하지 않음 (응답이 늦으면 4초만 기다리고 진행)
+    const status = await Promise.race([preCheck, new Promise((r) => setTimeout(() => r(null), 4000))]);
+    if (status && status.closed) {
+      syncClosed(true);
+      toast('투표가 마감되었어요');
+      return;
+    }
     await sendVote(v);
     const record = { ...v, at: new Date().toISOString() };
     if (!STAFF) storage.set(record); // 운영본부 폰에는 투표자 정보를 남기지 않음
@@ -1455,7 +1466,7 @@ function setStat(node, text, on) {
 
 function renderAdmin(d) {
   const time = new Date(d.updatedAt || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  els.adminMeta.textContent = `${time} 기준`;
+  els.adminMeta.textContent = `${time} 기준` + (d.late ? ` · 마감 중 들어온 응답 ${d.late}건은 집계에서 제외됨` : '');
   setStat(els.statVoters, `${d.voters}명`);
   setStat(els.statHidden, d.hidden ? '숨김' : '공개', !d.hidden);
   setStat(els.statAccepting, d.accepting ? '접수 중' : '마감', d.accepting);
