@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2a5b">
+<title>푸드코트 인기 투표</title>
+<style>
+  :root {
+    --navy: #0b2a5b;
+    --sky: #2f7de1;
+    --sky-soft: #e9f2fe;
+    --bg: #f2f5fa;
+    --card: #ffffff;
+    --text: #0f1b2d;
+    --muted: #5b6b80;
+    --line: #dfe6f0;
+    --gold: #d4a017;
+    --silver: #98a4b1;
+    --bronze: #b8733a;
+    --danger: #d64545;
+    --live: #e5484d;
+    --radius: 16px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a111d;
+      --card: #131c2c;
+      --text: #e7edf6;
+      --muted: #94a3b8;
+      --line: #233046;
+      --sky-soft: #15284a;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding-inline: 16px; }
+
+  /* 상단 */
+  .hero {
+    background: linear-gradient(160deg, #0b2a5b 0%, #12397a 55%, #2f7de1 140%);
+    color: #fff;
+    padding-block: calc(28px + env(safe-area-inset-top, 0px)) 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -60px; top: 20px;
+    width: 260px; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55));
+    transform: rotate(-18deg);
+    box-shadow: 0 14px 0 rgba(255,255,255,.18), 0 28px 0 rgba(255,255,255,.08);
+  }
+  .eyebrow { margin: 0 0 6px; font-size: 13px; letter-spacing: .04em; opacity: .8; }
+  .hero h1 { margin: 0; font-size: 28px; line-height: 1.25; letter-spacing: -.02em; }
+  .lead { margin: 10px 0 0; font-size: 15px; opacity: .9; }
+  .awards { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .awards li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    font-size: 13px; font-weight: 600;
+  }
+  .medal {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .medal.gold { background: var(--gold); }
+  .medal.silver { background: var(--silver); }
+  .medal.bronze { background: var(--bronze); }
+
+  main { margin-top: -32px; position: relative; }
+
+  /* 탭 */
+  .tabs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    padding: 4px; margin-bottom: 12px;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15,27,45,.06), 0 6px 20px rgba(15,27,45,.05);
+  }
+  .tab {
+    height: 44px; border: 0; border-radius: 10px;
+    background: transparent; color: var(--muted);
+    font: inherit; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] { background: var(--navy); color: #fff; }
+  @media (prefers-color-scheme: dark) { .tab[aria-selected="true"] { background: var(--sky); } }
+  .tab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: pulse 1.6s ease-in-out infinite; }
+
+  .banner {
+    margin-bottom: 12px; padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff4d6; color: #6b4e00;
+    font-size: 13px;
+  }
+  .banner.error { background: #fde8e8; color: #8a1f1f; }
+  @media (prefers-color-scheme: dark) {
+    .banner { background: #3a2f10; color: #f3d98b; }
+    .banner.error { background: #3d1717; color: #f5b5b5; }
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(15,27,45,.06), 0 6px 20px rgba(15,27,45,.05);
+  }
+  .card h2 {
+    margin: 0 0 14px; font-size: 17px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px;
+  }
+  @media (prefers-color-scheme: dark) { .step { background: var(--sky); } }
+  .count {
+    margin-left: auto;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .count.full { color: var(--sky); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: block; margin-bottom: 12px; }
+  .field > span { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .field select, .field input {
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    font: inherit; font-size: 16px; /* 16px 미만이면 iOS가 확대함 */
+    color: var(--text);
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    outline: none;
+    appearance: none; -webkit-appearance: none;
+  }
+  .field select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 34px;
+  }
+  .field select:focus, .field input:focus { border-color: var(--sky); }
+  .field.invalid select, .field.invalid input { border-color: var(--danger); }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  .booths { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .booth {
+    display: grid; grid-template-columns: 34px 1fr 26px; align-items: center; gap: 12px;
+    padding: 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s, opacity .15s;
+    user-select: none;
+  }
+  .booth input { position: absolute; opacity: 0; pointer-events: none; }
+  .booth .num {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--bg); color: var(--muted);
+    font-weight: 700; font-size: 14px;
+  }
+  .booth .info { min-width: 0; }
+  .booth .info b { display: block; font-size: 16px; }
+  .booth .info small { display: block; font-size: 13px; color: var(--muted); }
+  .booth .check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--line);
+    display: grid; place-items: center;
+    transition: background-color .15s, border-color .15s;
+  }
+  .booth .check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .15s; }
+  .booth input:checked ~ .check { background: var(--sky); border-color: var(--sky); }
+  .booth input:checked ~ .check svg { opacity: 1; }
+  .booth.on { border-color: var(--sky); background: var(--sky-soft); }
+  .booth.on .num { background: var(--sky); color: #fff; }
+  .booth:focus-within { outline: 2px solid var(--sky); outline-offset: 2px; }
+  .booths.full .booth:not(.on) { opacity: .45; }
+
+  /* 실시간 순위 */
+  .rank-head { display: flex; align-items: center; gap: 8px; }
+  .rank-head h2 { margin: 0; }
+  .live {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 800; letter-spacing: .08em;
+    color: var(--live);
+  }
+  .live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
+  .live.off { color: var(--muted); }
+  .live.off i { animation: none; }
+  .rank-meta { margin: 4px 0 14px; font-size: 13px; color: var(--muted); }
+  .ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .rank {
+    display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--bg);
+  }
+  .rank .pos {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--card); color: var(--muted);
+    font-size: 17px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank .body { min-width: 0; }
+  .rank .line { display: flex; align-items: baseline; gap: 8px; }
+  .rank .line b { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank .votes { display: inline-block; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .rank .votes.bump { animation: bump .6s ease; }
+  .rank .sub { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+  .rank .menu { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank .award {
+    flex: none;
+    padding: 1px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 800; color: #fff;
+    background: var(--gold);
+  }
+  .meter { height: 6px; margin-top: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--sky); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .rank.r1 { background: linear-gradient(90deg, rgba(212,160,23,.18), transparent 75%), var(--bg); }
+  .rank.r2 { background: linear-gradient(90deg, rgba(152,164,177,.22), transparent 75%), var(--bg); }
+  .rank.r3 { background: linear-gradient(90deg, rgba(184,115,58,.18), transparent 75%), var(--bg); }
+  .rank.r1 .pos, .rank.r1 .meter i { background: var(--gold); color: #fff; }
+  .rank.r2 .pos, .rank.r2 .meter i, .rank.r2 .award { background: var(--silver); color: #fff; }
+  .rank.r3 .pos, .rank.r3 .meter i, .rank.r3 .award { background: var(--bronze); color: #fff; }
+  .rank-hidden { text-align: center; padding: 28px 8px 12px; color: var(--muted); }
+  .rank-hidden b { display: block; color: var(--text); font-size: 17px; margin-bottom: 4px; }
+
+  /* 하단 고정 버튼 */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--card);
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    z-index: 10;
+  }
+  .bar .wrap { padding-inline: 0; }
+  .btn {
+    display: block; width: 100%;
+    height: 54px; border: 0; border-radius: 14px;
+    font: inherit; font-size: 17px; font-weight: 700;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--navy); color: #fff; }
+  @media (prefers-color-scheme: dark) { .btn.primary { background: var(--sky); } }
+  .btn.primary:disabled { background: var(--line); color: var(--muted); cursor: default; }
+  .btn.ghost { background: var(--bg); color: var(--text); }
+
+  /* 확인 시트 */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 20;
+    background: rgba(5,12,24,.5);
+    display: flex; align-items: flex-end; justify-content: center;
+    animation: fade .2s ease;
+  }
+  .sheet {
+    width: 100%; max-width: 560px;
+    background: var(--card);
+    border-radius: 22px 22px 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    animation: up .25s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet h3 { margin: 0 0 16px; font-size: 20px; }
+  .summary { margin: 0 0 14px; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 15px; }
+  .summary dt { color: var(--muted); }
+  .summary dd { margin: 0; font-weight: 600; }
+  .actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 18px; }
+
+  /* 완료 / 마감 화면 */
+  .center { text-align: center; padding-block: 36px 24px; }
+  .center .icon {
+    width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--sky-soft); color: var(--sky);
+  }
+  .center .icon svg { width: 36px; height: 36px; }
+  .center h2 { justify-content: center; font-size: 22px; margin-bottom: 6px; }
+  .center p { margin: 0; color: var(--muted); }
+  .center .summary { text-align: left; max-width: 300px; margin: 22px auto 0; padding: 16px; background: var(--bg); border-radius: 12px; }
+  .center .stack { display: grid; gap: 8px; max-width: 300px; margin: 20px auto 0; }
+
+  .toast {
+    position: fixed; left: 50%; z-index: 30;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 12px);
+    max-width: calc(100% - 32px);
+    padding: 10px 16px; border-radius: 999px;
+    background: rgba(15,27,45,.92); color: #fff;
+    font-size: 14px; text-align: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .spinner {
+    display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 8px;
+    border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  /* 대형 화면 모드 (?board) */
+  body.board { padding-bottom: 24px; }
+  body.board .wrap { max-width: 1280px; }
+  body.board .tabs, body.board .banner, body.board .bar { display: none !important; }
+  body.board .hero h1 { font-size: 40px; }
+  body.board .lead { font-size: 18px; }
+  @media (min-width: 900px) {
+    body.board .ranks {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(var(--rows, 10), auto);
+      grid-auto-flow: column;
+      column-gap: 16px;
+    }
+  }
+  body.board .rank { padding: 14px 18px; }
+  body.board .rank .line b, body.board .rank .votes { font-size: 21px; }
+  body.board .rank .sub { font-size: 14px; }
+  body.board .rank-meta { font-size: 15px; }
+
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes up { from { transform: translateY(100%); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @keyframes bump { 35% { transform: scale(1.3); color: var(--sky); } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow" id="festival"></p>
+    <h1 id="title"></h1>
+    <p class="lead">가장 맛있었던 부스에 투표해 주세요.<br>최대 <b id="maxText">2</b>개까지 고를 수 있어요.</p>
+    <ul class="awards">
+      <li><span class="medal gold">1</span>교장상</li>
+      <li><span class="medal silver">2</span>생도대장상</li>
+      <li><span class="medal bronze">3</span>생도전대장상</li>
+    </ul>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="tabs" role="tablist">
+    <button class="tab" type="button" role="tab" data-tab="vote" aria-selected="true">투표하기</button>
+    <button class="tab" type="button" role="tab" data-tab="rank" aria-selected="false"><span class="dot"></span>실시간 순위</button>
+  </nav>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div id="voteArea">
+    <!-- 투표 화면 -->
+    <form id="voteView" novalidate>
+      <section class="card">
+        <h2><span class="step">1</span>인적사항</h2>
+        <div class="row2">
+          <label class="field">
+            <span>기수</span>
+            <select id="gisu"><option value="">선택</option></select>
+          </label>
+          <label class="field">
+            <span>중대</span>
+            <select id="company"><option value="">선택</option></select>
+          </label>
+        </div>
+        <label class="field">
+          <span>이름</span>
+          <input id="name" type="text" maxlength="20" placeholder="홍길동" autocomplete="name" enterkeyhint="done">
+        </label>
+        <p class="hint">마음이 바뀌면 다시 투표할 수 있어요. 같은 사람의 마지막 투표만 반영됩니다.</p>
+      </section>
+
+      <section class="card">
+        <h2><span class="step">2</span>부스 선택 <span class="count" id="count"></span></h2>
+        <ul class="booths" id="booths"></ul>
+      </section>
+    </form>
+
+    <!-- 완료 화면 -->
+    <section class="card center" id="doneView" hidden>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h2 id="doneTitle">투표 완료!</h2>
+      <p>마음이 바뀌면 언제든 다시 투표할 수 있어요.<br>마지막 투표만 반영됩니다.</p>
+      <dl class="summary" id="doneSummary"></dl>
+      <div class="stack">
+        <button class="btn primary" type="button" data-goto="rank">실시간 순위 보기</button>
+        <button class="btn ghost" type="button" id="changeBtn">투표 변경하기</button>
+      </div>
+    </section>
+
+    <!-- 투표 기간 아님 -->
+    <section class="card center" id="closedView" hidden>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <h2 id="closedTitle"></h2>
+      <p id="closedText"></p>
+      <div class="stack">
+        <button class="btn primary" type="button" data-goto="rank">실시간 순위 보기</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 실시간 순위 -->
+  <section class="card" id="rankView" hidden>
+    <div class="rank-head">
+      <h2>실시간 순위</h2>
+      <span class="live off" id="liveBadge"><i></i>LIVE</span>
+    </div>
+    <p class="rank-meta" id="rankMeta">불러오는 중…</p>
+    <div class="rank-hidden" id="rankHidden" hidden>
+      <b id="rankHiddenTitle"></b>
+      <span id="rankHiddenText"></span>
+    </div>
+    <ol class="ranks" id="ranks"></ol>
+  </section>
+</main>
+
+<div class="bar" id="bar">
+  <div class="wrap"><button class="btn primary" id="submitBtn" type="button" disabled></button></div>
+</div>
+
+<div class="backdrop" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">이대로 투표할까요?</h3>
+    <dl class="summary" id="confirmSummary"></dl>
+    <p class="hint">나중에 다시 투표하면 마지막 투표로 바뀌어요.</p>
+    <div class="actions">
+      <button class="btn ghost" id="cancelBtn" type="button">수정</button>
+      <button class="btn primary" id="confirmBtn" type="button">투표하기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================================================================
+   설정 — 이 부분만 고치면 됩니다 (자세한 방법은 README.md)
+   ================================================================ */
+const CONFIG = {
+  festival: '공군사관학교 축제',
+  title: '푸드코트 인기 투표',
+
+  // 구글 시트 '설정' 탭의 '웹페이지 연결 링크'를 그대로 붙여넣으세요.
+  // 비워두면 테스트 모드로 동작합니다(실제로 저장되지 않음).
+  formPrefillLink: 'https://docs.google.com/forms/d/e/1FAIpQLSeho5Uioc5aYPlj_3OEDm7gaZpE9u2cU01EiMVjKK4kRevlBQ/viewform?usp=pp_url&entry.1902978946=%EA%B8%B0%EC%88%98&entry.2038646899=%EC%A4%91%EB%8C%80&entry.589612850=%EC%9D%B4%EB%A6%84&entry.640485065=%EB%B6%80%EC%8A%A41&entry.560616096=%EB%B6%80%EC%8A%A42',
+
+  // 실시간 순위: Apps Script 웹 앱 주소 (https://script.google.com/macros/s/.../exec)
+  // 비워두면 순위 탭에 '준비 중' 안내만 표시됩니다.
+  liveUrl: '',
+  liveRefreshSec: 20,
+
+  maxPicks: 2,
+
+  // 실제 재학 기수 / 중대 편성에 맞게 수정하세요.
+  classes: ['75기', '76기', '77기', '78기'],
+  companies: Array.from({ length: 8 }, (_, i) => `${i + 1}중대`),
+
+  // 부스 목록 (순서 = 화면의 부스 번호)
+  // name 값이 그대로 구글 시트에 기록되고 집계에 쓰입니다.
+  booths: [
+    { name: '쭈식탁', menu: '돼지고기 바비큐' },
+    { name: '결심당', menu: '카페, 베이커리' },
+    { name: '감자바쓰', menu: '벨지안 감자튀김' },
+    { name: '광풍덮밥', menu: '큐브스테이크덮밥' },
+    { name: '생활실 출입버거', menu: '햄버거' },
+    { name: '방콕특별시', menu: '카우카무(족발덮밥), 밀크티' },
+    { name: '뚜기 분식집', menu: '떡볶이, 디저트' },
+    { name: '공사N하노이쌈', menu: '분짜, 반미' },
+    { name: '꼬작사(꼬치작전사령부)', menu: '뼈통삼겹꼬치' },
+    { name: '4전&비', menu: '전' },
+    { name: '홀리몰리 과카몰리', menu: '과카몰리 샌드위치' },
+    { name: '불초밥집', menu: '불초밥' },
+    { name: '성무길감자', menu: '길감자' },
+    { name: 'Cafe Spring', menu: '무알콜칵테일' },
+    { name: 'MO지리MO임', menu: '불닭오믈렛, 해쉬브라운, 대패삼겹살' },
+    { name: '성무반점', menu: '짜장면, 우동' },
+    { name: '암탉과 수탉', menu: '구운치킨' },
+    { name: '빼앰', menu: '아이스크림' },
+    { name: '산도 식당', menu: '튀김 산도' },
+    { name: '핫까시🦅', menu: '핫도그, 떡꼬치' },
+  ],
+
+  // 투표 가능 시간 (비워두면 항상 열림). 예: '2026-11-01T11:00:00+09:00'
+  voteStart: '',
+  voteEnd: '',
+};
+/* ================================================================ */
+
+const FIELDS = ['기수', '중대', '이름', '부스1', '부스2'];
+const AWARDS = ['교장상', '생도대장상', '생도전대장상'];
+const STORE_KEY = 'foodcourt-vote:' + CONFIG.festival + ':' + CONFIG.title;
+const params = new URLSearchParams(location.search);
+const BOARD = params.has('board');
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  banner: $('banner'), tabs: document.querySelectorAll('.tab'),
+  voteArea: $('voteArea'), voteView: $('voteView'), doneView: $('doneView'), closedView: $('closedView'),
+  gisu: $('gisu'), company: $('company'), name: $('name'), booths: $('booths'), count: $('count'),
+  bar: $('bar'), submitBtn: $('submitBtn'), sheet: $('sheet'), changeBtn: $('changeBtn'),
+  confirmSummary: $('confirmSummary'), doneSummary: $('doneSummary'),
+  cancelBtn: $('cancelBtn'), confirmBtn: $('confirmBtn'), toast: $('toast'),
+  rankView: $('rankView'), ranks: $('ranks'), rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
+};
+
+const storage = {
+  get() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } },
+  set(v) { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch {} },
+  clear() { try { localStorage.removeItem(STORE_KEY); } catch {} },
+};
+
+// 미리 채워진 링크에서 응답 주소와 entry ID를 뽑아냄
+function parseFormLink(link) {
+  if (!link.trim()) return null;
+  const url = new URL(link.trim());
+  const ids = {};
+  for (const [key, value] of url.searchParams) {
+    if (key.startsWith('entry.')) ids[value.trim()] = key;
+  }
+  const missing = FIELDS.filter((f) => !ids[f]);
+  if (missing.length) throw new Error(`구글폼 링크에서 '${missing.join("', '")}' 항목을 찾지 못했습니다. 미리 채우기 값을 확인하세요.`);
+  return { action: url.origin + url.pathname.replace(/\/viewform$/, '/formResponse'), ids };
+}
+
+let form = null;
+let formError = null;
+try { form = parseFormLink(CONFIG.formPrefillLink); } catch (e) { formError = e.message; }
+
+function showBanner(text, isError) {
+  els.banner.textContent = text;
+  els.banner.classList.toggle('error', !!isError);
+  els.banner.hidden = false;
+}
+
+let toastTimer;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+}
+
+function fillSelect(select, items) {
+  for (const item of items) select.add(new Option(item, item));
+}
+
+function votingWindow() {
+  const now = Date.now();
+  if (CONFIG.voteStart && now < new Date(CONFIG.voteStart)) return 'before';
+  if (CONFIG.voteEnd && now > new Date(CONFIG.voteEnd)) return 'after';
+  return 'open';
+}
+
+/* ───────────── 탭 / 화면 전환 ───────────── */
+
+let tab = 'vote';
+let voteState = 'form'; // form | done | closed
+
+function setTab(next) {
+  tab = next;
+  els.tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === next)));
+  els.voteArea.hidden = next !== 'vote';
+  els.rankView.hidden = next !== 'rank';
+  updateBar();
+  if (next === 'rank') startLive(); else stopLive();
+  window.scrollTo({ top: 0 });
+}
+
+function showVoteState(state) {
+  voteState = state;
+  els.voteView.hidden = state !== 'form';
+  els.doneView.hidden = state !== 'done';
+  els.closedView.hidden = state !== 'closed';
+  updateBar();
+}
+
+function updateBar() {
+  els.bar.hidden = BOARD || tab !== 'vote' || voteState !== 'form';
+}
+
+els.tabs.forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
+document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.goto)));
+
+/* ───────────── 투표 ───────────── */
+
+function renderBooths() {
+  const frag = document.createDocumentFragment();
+  CONFIG.booths.forEach((booth, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <label class="booth">
+        <input type="checkbox" name="booth">
+        <span class="num"></span>
+        <span class="info"><b></b><small></small></span>
+        <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+      </label>`;
+    li.querySelector('input').value = booth.name;
+    li.querySelector('.num').textContent = i + 1;
+    li.querySelector('b').textContent = booth.name;
+    li.querySelector('small').textContent = booth.menu || '';
+    if (!booth.menu) li.querySelector('small').remove();
+    frag.append(li);
+  });
+  els.booths.append(frag);
+}
+
+// 선택 순서를 유지하기 위해 따로 기록
+let picks = [];
+
+function updatePicks() {
+  const full = picks.length >= CONFIG.maxPicks;
+  els.booths.classList.toggle('full', full);
+  els.count.textContent = `${picks.length} / ${CONFIG.maxPicks}`;
+  els.count.classList.toggle('full', full);
+  els.submitBtn.disabled = picks.length === 0;
+  els.submitBtn.textContent = picks.length ? `투표하기 (${picks.length}/${CONFIG.maxPicks})` : '부스를 선택해 주세요';
+}
+
+function setPicks(list) {
+  const names = CONFIG.booths.map((b) => b.name);
+  picks = list.filter((n) => names.includes(n)).slice(0, CONFIG.maxPicks);
+  for (const box of els.booths.querySelectorAll('input')) {
+    box.checked = picks.includes(box.value);
+    box.closest('.booth').classList.toggle('on', box.checked);
+  }
+  updatePicks();
+}
+
+els.booths.addEventListener('change', (e) => {
+  const box = e.target;
+  if (box.checked) {
+    if (picks.length >= CONFIG.maxPicks) {
+      box.checked = false;
+      toast(`최대 ${CONFIG.maxPicks}개까지 선택할 수 있어요`);
+      return;
+    }
+    picks.push(box.value);
+  } else {
+    picks = picks.filter((p) => p !== box.value);
+  }
+  box.closest('.booth').classList.toggle('on', box.checked);
+  updatePicks();
+});
+
+function readForm() {
+  return {
+    gisu: els.gisu.value,
+    company: els.company.value,
+    name: els.name.value.trim().replace(/\s+/g, ' '),
+    booths: [...picks],
+  };
+}
+
+function validate(v) {
+  const checks = [
+    [els.gisu, !v.gisu, '기수를 선택해 주세요'],
+    [els.company, !v.company, '중대를 선택해 주세요'],
+    [els.name, v.name.length < 2, '이름을 입력해 주세요'],
+  ];
+  document.querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
+  const failed = checks.find(([, bad]) => bad);
+  if (!failed) return true;
+  const [el, , msg] = failed;
+  el.closest('.field').classList.add('invalid');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => el.focus({ preventScroll: true }), 300);
+  toast(msg);
+  return false;
+}
+
+function renderSummary(dl, v) {
+  dl.replaceChildren();
+  const rows = [
+    ['투표자', `${v.gisu} ${v.company} ${v.name}`],
+    ...v.booths.map((b, i) => [`선택 ${i + 1}`, b]),
+  ];
+  for (const [k, val] of rows) {
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = k;
+    dd.textContent = val;
+    dl.append(dt, dd);
+  }
+}
+
+function openSheet(v) {
+  renderSummary(els.confirmSummary, v);
+  els.sheet.hidden = false;
+  els.confirmBtn.focus();
+}
+function closeSheet() { els.sheet.hidden = true; }
+
+async function sendVote(v) {
+  if (!form) {
+    await new Promise((r) => setTimeout(r, 700)); // 테스트 모드
+    return;
+  }
+  const body = new URLSearchParams();
+  body.append(form.ids['기수'], v.gisu);
+  body.append(form.ids['중대'], v.company);
+  body.append(form.ids['이름'], v.name);
+  body.append(form.ids['부스1'], v.booths[0] || '');
+  body.append(form.ids['부스2'], v.booths[1] || '');
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    // 구글폼은 응답 내용을 읽을 수 없지만(no-cors) 전송은 정상적으로 됩니다.
+    await fetch(form.action, { method: 'POST', mode: 'no-cors', body, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let sending = false;
+els.submitBtn.addEventListener('click', () => {
+  const v = readForm();
+  if (!v.booths.length) return;
+  if (validate(v)) openSheet(v);
+});
+els.cancelBtn.addEventListener('click', closeSheet);
+els.sheet.addEventListener('click', (e) => { if (e.target === els.sheet && !sending) closeSheet(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !els.sheet.hidden && !sending) closeSheet(); });
+
+els.confirmBtn.addEventListener('click', async () => {
+  if (sending) return;
+  sending = true;
+  const v = readForm();
+  const changed = !!storage.get();
+  els.confirmBtn.disabled = els.cancelBtn.disabled = true;
+  els.confirmBtn.innerHTML = '<span class="spinner"></span>제출 중…';
+  try {
+    await sendVote(v);
+    const record = { ...v, at: new Date().toISOString() };
+    storage.set(record);
+    closeSheet();
+    showDone(record, changed);
+  } catch {
+    toast('제출에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
+  } finally {
+    sending = false;
+    els.confirmBtn.disabled = els.cancelBtn.disabled = false;
+    els.confirmBtn.textContent = '투표하기';
+  }
+});
+
+function showDone(record, changed) {
+  renderSummary(els.doneSummary, record);
+  $('doneTitle').textContent = changed ? '투표를 변경했어요!' : '투표 완료!';
+  els.changeBtn.hidden = votingWindow() !== 'open';
+  showVoteState('done');
+  window.scrollTo({ top: 0 });
+}
+
+els.changeBtn.addEventListener('click', () => {
+  const saved = storage.get();
+  if (saved) {
+    els.gisu.value = saved.gisu;
+    els.company.value = saved.company;
+    els.name.value = saved.name;
+    setPicks(saved.booths || []);
+  }
+  showVoteState('form');
+  window.scrollTo({ top: 0 });
+});
+
+function showClosed(title, text) {
+  $('closedTitle').textContent = title;
+  $('closedText').textContent = text;
+  showVoteState('closed');
+}
+
+function formatTime(d) {
+  return d.toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+/* ───────────── 실시간 순위 ───────────── */
+
+let liveTimer = null;
+let liveBusy = false;
+let lastLive = null;
+
+function startLive() {
+  if (liveTimer) return;
+  refreshLive();
+  liveTimer = setInterval(refreshLive, CONFIG.liveRefreshSec * 1000);
+}
+function stopLive() {
+  clearInterval(liveTimer);
+  liveTimer = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (tab !== 'rank') return;
+  if (document.hidden) stopLive(); else startLive();
+});
+
+async function fetchLive() {
+  if (!CONFIG.liveUrl) return { notConnected: true };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(CONFIG.liveUrl, { cache: 'no-store', signal: ctrl.signal });
+    if (!res.ok) throw new Error(res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function refreshLive() {
+  if (liveBusy) return;
+  liveBusy = true;
+  try {
+    lastLive = await fetchLive();
+    renderLive(lastLive, false);
+  } catch {
+    renderLive(lastLive, true);
+  } finally {
+    liveBusy = false;
+  }
+}
+
+function showRankMessage(title, text) {
+  $('rankHiddenTitle').textContent = title;
+  $('rankHiddenText').textContent = text;
+  els.rankHidden.hidden = false;
+  els.rankMeta.textContent = '';
+  els.ranks.replaceChildren();
+}
+
+function renderLive(data, failed) {
+  els.liveBadge.classList.toggle('off', failed || !data || data.hidden || data.notConnected);
+  if (!data) {
+    els.rankMeta.textContent = '순위를 불러오지 못했어요. 잠시 후 다시 시도합니다.';
+    return;
+  }
+  if (data.notConnected) return showRankMessage('실시간 순위 준비 중이에요', '곧 순위가 표시됩니다.');
+  if (data.hidden) return showRankMessage('지금은 순위가 비공개예요', '결과는 시상식에서 발표됩니다.');
+  els.rankHidden.hidden = true;
+  const time = new Date(data.updatedAt || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  els.rankMeta.textContent = failed
+    ? `연결이 불안정해요 · ${time} 기준 결과`
+    : `참여 ${data.voters || 0}명 · ${time} 기준 · ${CONFIG.liveRefreshSec}초마다 갱신`;
+  renderRanks(data.counts || {});
+}
+
+function rankRows(counts) {
+  const rows = CONFIG.booths.map((b, i) => ({ ...b, no: i + 1, votes: Number(counts[b.name]) || 0 }));
+  rows.sort((a, b) => b.votes - a.votes || a.no - b.no);
+  for (const r of rows) {
+    r.rank = 1 + rows.filter((o) => o.votes > r.votes).length;
+    r.tied = rows.filter((o) => o.votes === r.votes).length > 1;
+  }
+  return rows;
+}
+
+function createRankItem(r) {
+  const li = document.createElement('li');
+  li.className = 'rank';
+  li.dataset.key = r.name;
+  li.innerHTML = `
+    <span class="pos"></span>
+    <div class="body">
+      <div class="line"><b></b><span class="votes"></span></div>
+      <div class="sub"><span class="award"></span><span class="menu"></span></div>
+      <div class="meter"><i></i></div>
+    </div>`;
+  li.querySelector('b').textContent = r.name;
+  li.querySelector('.menu').textContent = r.menu ? `${r.no}번 · ${r.menu}` : `${r.no}번`;
+  return li;
+}
+
+function fillRankItem(li, r, max) {
+  const top = r.votes > 0 && r.rank <= 3 ? r.rank : 0;
+  li.className = 'rank' + (top ? ` r${top}` : '');
+  li.querySelector('.pos').textContent = r.votes > 0 ? r.rank : '–';
+
+  const votes = li.querySelector('.votes');
+  const text = `${r.votes}표`;
+  if (votes.textContent && votes.textContent !== text) {
+    votes.classList.remove('bump');
+    void votes.offsetWidth;
+    votes.classList.add('bump');
+  }
+  votes.textContent = text;
+
+  const award = li.querySelector('.award');
+  award.hidden = !top;
+  if (top) award.textContent = AWARDS[top - 1] + (r.tied ? ' · 공동' : '');
+  li.querySelector('.meter i').style.width = `${(r.votes / max) * 100}%`;
+}
+
+function renderRanks(counts) {
+  const rows = rankRows(counts);
+  const max = Math.max(1, ...rows.map((r) => r.votes));
+
+  // 순위가 바뀐 항목이 제자리로 미끄러지듯 이동하도록 이전 위치를 기억
+  const before = new Map();
+  const existing = new Map();
+  for (const li of els.ranks.children) {
+    before.set(li.dataset.key, li.getBoundingClientRect());
+    existing.set(li.dataset.key, li);
+  }
+
+  els.ranks.style.setProperty('--rows', Math.ceil(rows.length / 2));
+  for (const r of rows) {
+    const li = existing.get(r.name) || createRankItem(r);
+    fillRankItem(li, r, max);
+    els.ranks.append(li);
+  }
+
+  for (const li of els.ranks.children) {
+    const prev = before.get(li.dataset.key);
+    if (!prev || !li.animate) continue;
+    const now = li.getBoundingClientRect();
+    const dx = prev.left - now.left;
+    const dy = prev.top - now.top;
+    if (dx || dy) {
+      li.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    }
+  }
+}
+
+/* ───────────── 시작 ───────────── */
+
+function init() {
+  $('festival').textContent = CONFIG.festival;
+  $('title').textContent = CONFIG.title;
+  $('maxText').textContent = CONFIG.maxPicks;
+  document.title = CONFIG.title;
+  document.body.classList.toggle('board', BOARD);
+
+  // 테스트용: 주소 끝에 ?reset 을 붙이면 이 기기의 투표 기록을 지움
+  if (params.has('reset')) {
+    storage.clear();
+    history.replaceState(null, '', location.pathname);
+  }
+
+  if (formError) showBanner(formError, true);
+  else if (!form) showBanner('테스트 모드 — 구글폼이 연결되지 않아 투표가 실제로 저장되지 않습니다.');
+
+  fillSelect(els.gisu, CONFIG.classes);
+  fillSelect(els.company, CONFIG.companies);
+  renderBooths();
+  updatePicks();
+
+  for (const el of [els.gisu, els.company, els.name]) {
+    el.addEventListener('input', () => el.closest('.field').classList.remove('invalid'));
+  }
+  els.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); els.name.blur(); } });
+
+  const win = votingWindow();
+  const saved = storage.get();
+  if (win === 'before') showClosed('아직 투표 전이에요', `${formatTime(new Date(CONFIG.voteStart))}부터 투표할 수 있어요.`);
+  else if (win === 'after') showClosed('투표가 마감되었어요', '참여해 주셔서 감사합니다. 결과는 시상식에서 발표됩니다.');
+  else if (saved) showDone(saved, false);
+  else showVoteState('form');
+
+  setTab(BOARD || params.has('rank') ? 'rank' : 'vote');
+}
+
+init();
+</script>
+</body>
+</html>
