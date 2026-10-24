@@ -351,6 +351,7 @@
   .summary dt { color: var(--muted); }
   .summary dd { margin: 0; font-weight: 700; }
   .actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 18px; }
+  .fair { margin: 8px 0 0; font-size: 12px; font-weight: 600; line-height: 1.45; color: var(--danger); }
 
   /* ───── 완료 / 마감 ───── */
   .center { text-align: center; padding: 34px 20px 24px; }
@@ -688,6 +689,7 @@
     <dl class="summary" id="confirmSummary"></dl>
     <p class="warn" id="sheetWarn" hidden></p>
     <p class="hint">나중에 다시 투표하면 마지막 투표로 바뀌어요.</p>
+    <p class="fair">⚠ 부정 투표(중복 투표, 타인 명의·허위 정보 투표 등)가 확인될 경우 해당 표는 무효 처리되며, 엄중히 책임을 묻겠습니다.</p>
     <div class="actions">
       <button class="btn ghost" id="cancelBtn" type="button">수정</button>
       <button class="btn primary" id="confirmBtn" type="button">투표하기</button>
