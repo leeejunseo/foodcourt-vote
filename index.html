@@ -1504,7 +1504,7 @@ els.hideBtn.addEventListener('click', () => confirmTap(els.hideBtn, () => {
 }));
 els.openBtn.addEventListener('click', () => confirmTap(els.openBtn, () => {
   const close = adminState.accepting;
-  runAdmin(close ? 'close' : 'open', close ? '투표를 마감했어요' : '투표를 다시 열었어요');
+  runAdmin(close ? 'close' : 'open', close ? '투표를 마감하고 순위를 숨겼어요' : '투표를 다시 열었어요');
 }));
 els.adminRefresh.addEventListener('click', () => runAdmin('status'));
 
