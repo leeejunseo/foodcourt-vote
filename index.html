@@ -3,34 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b2a5b">
+<meta name="theme-color" content="#06122b">
 <title>푸드코트 인기 투표</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <style>
   :root {
-    --navy: #0b2a5b;
-    --sky: #2f7de1;
-    --sky-soft: #e9f2fe;
-    --bg: #f2f5fa;
+    --navy: #0b2350;
+    --blue: #2563eb;
+    --blue-soft: #eaf1ff;
+    --bg: #f3f5fa;
     --card: #ffffff;
-    --text: #0f1b2d;
-    --muted: #5b6b80;
-    --line: #dfe6f0;
-    --gold: #d4a017;
-    --silver: #98a4b1;
-    --bronze: #b8733a;
-    --danger: #d64545;
-    --live: #e5484d;
-    --radius: 16px;
+    --tile: #f4f6fb;
+    --ink: #0e1a2f;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --gold: #f2b01e;
+    --silver: #a3afbf;
+    --bronze: #d0884d;
+    --live: #ef4444;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(14,26,47,.05), 0 10px 30px rgba(14,26,47,.07);
+    --radius: 20px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0a111d;
-      --card: #131c2c;
-      --text: #e7edf6;
+      --bg: #060c18;
+      --card: #0f1829;
+      --tile: #152036;
+      --ink: #e8eef8;
       --muted: #94a3b8;
-      --line: #233046;
-      --sky-soft: #15284a;
+      --line: #22304a;
+      --blue: #4c8dff;
+      --blue-soft: #14284d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.25);
       color-scheme: dark;
     }
   }
@@ -39,124 +46,152 @@
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
     background: var(--bg);
-    color: var(--text);
+    color: var(--ink);
     line-height: 1.5;
-    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    letter-spacing: -0.01em;
+    padding-bottom: 32px;
     -webkit-tap-highlight-color: transparent;
   }
+  body.bar-on { padding-bottom: calc(var(--bar-h, 96px) + 24px); }
   .wrap { max-width: 560px; margin: 0 auto; padding-inline: 16px; }
+  button { font: inherit; letter-spacing: inherit; }
 
-  /* 상단 */
+  /* ───── 상단 ───── */
   .hero {
-    background: linear-gradient(160deg, #0b2a5b 0%, #12397a 55%, #2f7de1 140%);
-    color: #fff;
-    padding-block: calc(28px + env(safe-area-inset-top, 0px)) 56px;
     position: relative;
     overflow: hidden;
+    color: #fff;
+    background:
+      radial-gradient(120% 80% at 90% -10%, rgba(76,141,255,.5), transparent 60%),
+      radial-gradient(90% 70% at -10% 115%, rgba(242,176,30,.2), transparent 60%),
+      linear-gradient(170deg, #06122b 0%, #0b2350 55%, #143a85 100%);
+    padding-block: calc(24px + env(safe-area-inset-top, 0px)) 68px;
   }
-  .hero::after {
+  .hero::before {
     content: "";
-    position: absolute;
-    right: -60px; top: 20px;
-    width: 260px; height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55));
-    transform: rotate(-18deg);
-    box-shadow: 0 14px 0 rgba(255,255,255,.18), 0 28px 0 rgba(255,255,255,.08);
+    position: absolute; inset: 0;
+    pointer-events: none;
+    opacity: .75;
+    background-image:
+      radial-gradient(1.5px 1.5px at 8% 22%, #fff, transparent 70%),
+      radial-gradient(1px 1px at 22% 8%, #fff, transparent 70%),
+      radial-gradient(1.5px 1.5px at 38% 30%, #fff, transparent 70%),
+      radial-gradient(1px 1px at 55% 12%, #fff, transparent 70%),
+      radial-gradient(1px 1px at 64% 44%, #fff, transparent 70%),
+      radial-gradient(1.5px 1.5px at 92% 58%, #fff, transparent 70%),
+      radial-gradient(1px 1px at 48% 62%, #fff, transparent 70%),
+      radial-gradient(1px 1px at 16% 52%, #fff, transparent 70%);
   }
-  .eyebrow { margin: 0 0 6px; font-size: 13px; letter-spacing: .04em; opacity: .8; }
-  .hero h1 { margin: 0; font-size: 28px; line-height: 1.25; letter-spacing: -.02em; }
-  .lead { margin: 10px 0 0; font-size: 15px; opacity: .9; }
-  .awards { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  .awards li {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 12px 6px 6px;
+  .sky-art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .hero .wrap { position: relative; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 0 0 14px;
+    padding: 5px 12px 5px 10px;
     border-radius: 999px;
-    background: rgba(255,255,255,.12);
-    font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.16);
+    font-size: 12.5px; font-weight: 600;
   }
-  .medal {
-    width: 24px; height: 24px; border-radius: 50%;
-    display: grid; place-items: center;
-    font-size: 12px; font-weight: 800; color: #fff;
+  .hero h1 { margin: 0; font-size: 36px; line-height: 1.15; font-weight: 800; letter-spacing: -.035em; }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, #ffe08a, #f2b01e 55%, #ffb347);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
   }
-  .medal.gold { background: var(--gold); }
-  .medal.silver { background: var(--silver); }
-  .medal.bronze { background: var(--bronze); }
+  .lead { margin: 12px 0 0; font-size: 15px; color: rgba(255,255,255,.82); }
+  .prizes { list-style: none; margin: 22px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .prizes li {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 6px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.14);
+    text-align: center;
+  }
+  .prizes .p1 { background: linear-gradient(180deg, rgba(242,176,30,.24), rgba(242,176,30,.05)); border-color: rgba(242,176,30,.45); }
+  .prizes .medal { font-size: 26px; line-height: 1; }
+  .prizes small { margin-top: 6px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.62); }
+  .prizes b { font-size: 13.5px; word-break: keep-all; }
 
-  main { margin-top: -32px; position: relative; }
+  main { margin-top: -38px; position: relative; }
 
-  /* 탭 */
+  /* ───── 탭 ───── */
   .tabs {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
-    padding: 4px; margin-bottom: 12px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 5px; margin-bottom: 14px;
     background: var(--card);
-    border-radius: 14px;
-    box-shadow: 0 1px 2px rgba(15,27,45,.06), 0 6px 20px rgba(15,27,45,.05);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
   }
   .tab {
-    height: 44px; border: 0; border-radius: 10px;
+    height: 46px; border: 0; border-radius: 12px;
     background: transparent; color: var(--muted);
-    font: inherit; font-size: 15px; font-weight: 700;
+    font-size: 15px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; gap: 7px;
     cursor: pointer;
+    transition: color .2s, background-color .2s;
   }
-  .tab[aria-selected="true"] { background: var(--navy); color: #fff; }
-  @media (prefers-color-scheme: dark) { .tab[aria-selected="true"] { background: var(--sky); } }
+  .tab[aria-selected="true"] {
+    background: linear-gradient(135deg, #0b2350, #2563eb);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(37,99,235,.28);
+  }
   .tab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: pulse 1.6s ease-in-out infinite; }
 
-  .banner {
-    margin-bottom: 12px; padding: 12px 14px;
-    border-radius: 12px;
-    background: #fff4d6; color: #6b4e00;
-    font-size: 13px;
-  }
+  .banner { margin-bottom: 12px; padding: 12px 14px; border-radius: 14px; background: #fff4d6; color: #6b4e00; font-size: 13px; }
   .banner.error { background: #fde8e8; color: #8a1f1f; }
   @media (prefers-color-scheme: dark) {
     .banner { background: #3a2f10; color: #f3d98b; }
     .banner.error { background: #3d1717; color: #f5b5b5; }
   }
 
+  /* ───── 카드 ───── */
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    padding: 20px 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 2px rgba(15,27,45,.06), 0 6px 20px rgba(15,27,45,.05);
+    padding: 20px 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
   }
   .card h2 {
-    margin: 0 0 14px; font-size: 17px;
-    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 16px;
+    font-size: 18px; font-weight: 800; letter-spacing: -.03em;
+    display: flex; align-items: center; gap: 9px;
   }
   .step {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--navy); color: #fff;
+    width: 24px; height: 24px; border-radius: 50%;
     display: grid; place-items: center;
-    font-size: 12px;
+    background: linear-gradient(135deg, #0b2350, #2563eb); color: #fff;
+    font-size: 12px; font-weight: 800;
   }
-  @media (prefers-color-scheme: dark) { .step { background: var(--sky); } }
   .count {
     margin-left: auto;
-    font-size: 13px; font-weight: 600; color: var(--muted);
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--tile); color: var(--muted);
+    font-size: 12.5px; font-weight: 700;
     font-variant-numeric: tabular-nums;
+    transition: background-color .2s, color .2s;
   }
-  .count.full { color: var(--sky); }
+  .count.full { background: var(--blue-soft); color: var(--blue); }
 
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field { display: block; margin-bottom: 12px; }
-  .field > span { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .field > span { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
   .field select, .field input {
-    width: 100%;
-    height: 50px;
+    width: 100%; height: 52px;
     padding: 0 14px;
     font: inherit; font-size: 16px; /* 16px 미만이면 iOS가 확대함 */
-    color: var(--text);
-    background: var(--bg);
-    border: 1.5px solid var(--line);
-    border-radius: 12px;
+    color: var(--ink);
+    background: var(--tile);
+    border: 1.5px solid transparent;
+    border-radius: 14px;
     outline: none;
     appearance: none; -webkit-appearance: none;
+    transition: border-color .15s, background-color .15s;
   }
   .field select {
     background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
@@ -165,210 +200,323 @@
     background-repeat: no-repeat;
     padding-right: 34px;
   }
-  .field select:focus, .field input:focus { border-color: var(--sky); }
+  .field select:focus, .field input:focus { border-color: var(--blue); background-color: var(--card); }
   .field.invalid select, .field.invalid input { border-color: var(--danger); }
   .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
 
-  .booths { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .booth {
-    display: grid; grid-template-columns: 34px 1fr 26px; align-items: center; gap: 12px;
-    padding: 14px;
-    border: 1.5px solid var(--line);
-    border-radius: 14px;
+  /* ───── 부스 타일 ───── */
+  .tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tile {
+    position: relative;
+    display: flex; flex-direction: column;
+    height: 100%; min-height: 128px;
+    padding: 12px 12px 14px;
+    border-radius: 18px;
+    background: var(--tile);
+    border: 2px solid transparent;
     cursor: pointer;
-    transition: border-color .15s, background-color .15s, opacity .15s;
     user-select: none;
+    transition: transform .15s, border-color .15s, background-color .15s, box-shadow .15s, opacity .2s;
   }
-  .booth input { position: absolute; opacity: 0; pointer-events: none; }
-  .booth .num {
-    width: 34px; height: 34px; border-radius: 10px;
-    display: grid; place-items: center;
-    background: var(--bg); color: var(--muted);
-    font-weight: 700; font-size: 14px;
-  }
-  .booth .info { min-width: 0; }
-  .booth .info b { display: block; font-size: 16px; }
-  .booth .info small { display: block; font-size: 13px; color: var(--muted); }
-  .booth .check {
+  .tile:active { transform: scale(.97); }
+  .tile input { position: absolute; opacity: 0; pointer-events: none; }
+  .tile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .emoji { display: grid; place-items: center; flex: none; line-height: 1; }
+  .tile .emoji { width: 46px; height: 46px; border-radius: 14px; background: var(--card); font-size: 25px; transition: transform .2s; }
+  .tile .no { font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; transition: opacity .15s; }
+  .tick {
+    position: absolute; top: 10px; right: 10px;
     width: 26px; height: 26px; border-radius: 50%;
-    border: 2px solid var(--line);
     display: grid; place-items: center;
-    transition: background-color .15s, border-color .15s;
+    background: var(--blue);
+    transform: scale(0);
+    transition: transform .25s cubic-bezier(.3,1.6,.5,1);
   }
-  .booth .check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .15s; }
-  .booth input:checked ~ .check { background: var(--sky); border-color: var(--sky); }
-  .booth input:checked ~ .check svg { opacity: 1; }
-  .booth.on { border-color: var(--sky); background: var(--sky-soft); }
-  .booth.on .num { background: var(--sky); color: #fff; }
-  .booth:focus-within { outline: 2px solid var(--sky); outline-offset: 2px; }
-  .booths.full .booth:not(.on) { opacity: .45; }
+  .tick svg { width: 14px; height: 14px; }
+  .tile-name { font-size: 15px; line-height: 1.3; word-break: keep-all; }
+  .tile-menu {
+    margin-top: 3px;
+    font-size: 12.5px; line-height: 1.35; color: var(--muted);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    word-break: keep-all;
+  }
+  .tile.on { background: var(--blue-soft); border-color: var(--blue); box-shadow: 0 8px 20px rgba(37,99,235,.15); }
+  .tile.on .tick { transform: scale(1); }
+  .tile.on .no { opacity: 0; }
+  .tile.on .emoji { transform: rotate(-8deg) scale(1.06); }
+  .tile:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .tiles.full .tile:not(.on) { opacity: .42; }
 
-  /* 실시간 순위 */
-  .rank-head { display: flex; align-items: center; gap: 8px; }
-  .rank-head h2 { margin: 0; }
-  .live {
-    margin-left: auto;
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 800; letter-spacing: .08em;
-    color: var(--live);
-  }
-  .live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
-  .live.off { color: var(--muted); }
-  .live.off i { animation: none; }
-  .rank-meta { margin: 4px 0 14px; font-size: 13px; color: var(--muted); }
-  .ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .rank {
-    display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 12px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: var(--bg);
-  }
-  .rank .pos {
-    width: 40px; height: 40px; border-radius: 12px;
-    display: grid; place-items: center;
-    background: var(--card); color: var(--muted);
-    font-size: 17px; font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
-  .rank .body { min-width: 0; }
-  .rank .line { display: flex; align-items: baseline; gap: 8px; }
-  .rank .line b { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank .votes { display: inline-block; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .rank .votes.bump { animation: bump .6s ease; }
-  .rank .sub { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
-  .rank .menu { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank .award {
-    flex: none;
-    padding: 1px 8px; border-radius: 999px;
-    font-size: 11.5px; font-weight: 800; color: #fff;
-    background: var(--gold);
-  }
-  .meter { height: 6px; margin-top: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
-  .meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--sky); transition: width .6s cubic-bezier(.2,.8,.2,1); }
-  .rank.r1 { background: linear-gradient(90deg, rgba(212,160,23,.18), transparent 75%), var(--bg); }
-  .rank.r2 { background: linear-gradient(90deg, rgba(152,164,177,.22), transparent 75%), var(--bg); }
-  .rank.r3 { background: linear-gradient(90deg, rgba(184,115,58,.18), transparent 75%), var(--bg); }
-  .rank.r1 .pos, .rank.r1 .meter i { background: var(--gold); color: #fff; }
-  .rank.r2 .pos, .rank.r2 .meter i, .rank.r2 .award { background: var(--silver); color: #fff; }
-  .rank.r3 .pos, .rank.r3 .meter i, .rank.r3 .award { background: var(--bronze); color: #fff; }
-  .rank-hidden { text-align: center; padding: 28px 8px 12px; color: var(--muted); }
-  .rank-hidden b { display: block; color: var(--text); font-size: 17px; margin-bottom: 4px; }
-
-  /* 하단 고정 버튼 */
+  /* ───── 하단 바 ───── */
   .bar {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--card);
-    background: color-mix(in srgb, var(--card) 88%, transparent);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    background: color-mix(in srgb, var(--card) 86%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
     border-top: 1px solid var(--line);
-    z-index: 10;
   }
   .bar .wrap { padding-inline: 0; }
-  .btn {
-    display: block; width: 100%;
-    height: 54px; border: 0; border-radius: 14px;
-    font: inherit; font-size: 17px; font-weight: 700;
+  .picks { display: flex; gap: 6px; padding-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+  .picks::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px 0 10px;
+    border: 0; border-radius: 999px;
+    background: var(--blue-soft); color: var(--blue);
+    font-size: 13.5px; font-weight: 700;
     cursor: pointer;
+    animation: pop .25s cubic-bezier(.3,1.5,.5,1);
   }
-  .btn.primary { background: var(--navy); color: #fff; }
-  @media (prefers-color-scheme: dark) { .btn.primary { background: var(--sky); } }
-  .btn.primary:disabled { background: var(--line); color: var(--muted); cursor: default; }
-  .btn.ghost { background: var(--bg); color: var(--text); }
+  .chip-x { font-size: 11px; opacity: .6; }
+  .btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 56px;
+    border: 0; border-radius: 16px;
+    font-size: 17px; font-weight: 800;
+    cursor: pointer;
+    transition: transform .1s, opacity .2s;
+  }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn.primary { background: linear-gradient(135deg, #0b2350 0%, #2563eb 100%); color: #fff; box-shadow: 0 10px 24px rgba(37,99,235,.3); }
+  .btn.primary:disabled { background: var(--line); color: var(--muted); box-shadow: none; cursor: default; }
+  .btn.ghost { background: var(--tile); color: var(--ink); }
+  .btn .badge {
+    display: inline-grid; place-items: center;
+    min-width: 26px; height: 24px; margin-left: 8px; padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.2);
+    font-size: 13px;
+  }
 
-  /* 확인 시트 */
+  /* ───── 확인 시트 ───── */
   .backdrop {
     position: fixed; inset: 0; z-index: 20;
-    background: rgba(5,12,24,.5);
+    background: rgba(5,12,24,.55);
     display: flex; align-items: flex-end; justify-content: center;
     animation: fade .2s ease;
   }
   .sheet {
     width: 100%; max-width: 560px;
     background: var(--card);
-    border-radius: 22px 22px 0 0;
-    padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
-    animation: up .25s cubic-bezier(.2,.8,.2,1);
+    border-radius: 26px 26px 0 0;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    animation: up .3s cubic-bezier(.2,.8,.2,1);
   }
-  .sheet h3 { margin: 0 0 16px; font-size: 20px; }
-  .summary { margin: 0 0 14px; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 15px; }
+  .sheet::before { content: ""; display: block; width: 40px; height: 5px; margin: 0 auto 18px; border-radius: 99px; background: var(--line); }
+  .sheet h3 { margin: 0 0 16px; font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
+  .summary { margin: 0 0 14px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; border-radius: 16px; background: var(--tile); font-size: 15px; }
   .summary dt { color: var(--muted); }
-  .summary dd { margin: 0; font-weight: 600; }
+  .summary dd { margin: 0; font-weight: 700; }
   .actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 18px; }
 
-  /* 완료 / 마감 화면 */
-  .center { text-align: center; padding-block: 36px 24px; }
-  .center .icon {
-    width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%;
+  /* ───── 완료 / 마감 ───── */
+  .center { text-align: center; padding: 34px 20px 24px; }
+  .done-badge {
+    width: 78px; height: 78px; margin: 0 auto 16px; border-radius: 50%;
     display: grid; place-items: center;
-    background: var(--sky-soft); color: var(--sky);
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb, #4c8dff);
+    box-shadow: 0 0 0 8px var(--blue-soft), 0 14px 30px rgba(37,99,235,.35);
+    animation: pop .5s cubic-bezier(.3,1.5,.5,1);
   }
-  .center .icon svg { width: 36px; height: 36px; }
-  .center h2 { justify-content: center; font-size: 22px; margin-bottom: 6px; }
+  .done-badge svg { width: 38px; height: 38px; }
+  .done-badge.clock { background: var(--tile); color: var(--muted); box-shadow: none; animation: none; }
+  .center h2 { justify-content: center; margin-bottom: 6px; font-size: 24px; }
   .center p { margin: 0; color: var(--muted); }
-  .center .summary { text-align: left; max-width: 300px; margin: 22px auto 0; padding: 16px; background: var(--bg); border-radius: 12px; }
-  .center .stack { display: grid; gap: 8px; max-width: 300px; margin: 20px auto 0; }
+  .ticket { position: relative; max-width: 340px; margin: 24px auto 0; border-radius: 18px; background: var(--tile); overflow: hidden; text-align: left; }
+  .ticket-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .ticket-head b { color: var(--ink); }
+  .ticket-body { position: relative; display: grid; gap: 12px; padding: 16px 18px 18px; border-top: 2px dashed var(--line); }
+  .ticket-body::before, .ticket-body::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+  .ticket-body::before { left: -10px; }
+  .ticket-body::after { right: -10px; }
+  .ticket-pick { display: flex; align-items: center; gap: 12px; }
+  .ticket-pick .emoji { width: 42px; height: 42px; border-radius: 12px; background: var(--card); font-size: 23px; }
+  .ticket-pick b { display: block; font-size: 15px; }
+  .ticket-pick small { display: block; font-size: 12.5px; color: var(--muted); }
+  .stack { display: grid; gap: 8px; max-width: 340px; margin: 20px auto 0; }
 
+  /* ───── 실시간 순위 ───── */
+  .rank-head { display: flex; align-items: center; gap: 8px; }
+  .rank-head h2 { margin: 0; }
+  .live {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(239,68,68,.1); color: var(--live);
+    font-size: 11.5px; font-weight: 800; letter-spacing: .1em;
+  }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
+  .live.off { background: var(--tile); color: var(--muted); }
+  .live.off i { animation: none; }
+  .rank-meta { margin: 6px 0 20px; font-size: 13px; color: var(--muted); }
+  .rank-hidden { text-align: center; padding: 26px 8px 14px; color: var(--muted); }
+  .rank-hidden b { display: block; margin-bottom: 4px; color: var(--ink); font-size: 17px; }
+
+  .t1 { --tier: var(--gold); --tier-deep: #c98a00; --tier-ink: #b07a00; }
+  .t2 { --tier: var(--silver); --tier-deep: #7b8798; --tier-ink: #6b7686; }
+  .t3 { --tier: var(--bronze); --tier-deep: #a35f27; --tier-ink: #a35f27; }
+  @media (prefers-color-scheme: dark) {
+    .t1 { --tier-ink: #ffcf4d; }
+    .t2 { --tier-ink: #c7d0db; }
+    .t3 { --tier-ink: #e7a36c; }
+  }
+
+  .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 8px; margin-bottom: 18px; padding-top: 18px; }
+  .slot { display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center; }
+  .slot-emoji {
+    position: relative;
+    width: 58px; height: 58px; margin-bottom: 8px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--card); font-size: 29px; line-height: 1;
+    box-shadow: 0 0 0 3px var(--tier), 0 8px 18px rgba(14,26,47,.14);
+  }
+  .s1 .slot-emoji { width: 70px; height: 70px; font-size: 36px; }
+  .s1:not(.empty) .slot-emoji::before { content: "👑"; position: absolute; top: -24px; font-size: 22px; animation: float 2.4s ease-in-out infinite; }
+  .slot-name {
+    font-size: 13.5px; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    word-break: keep-all;
+  }
+  .slot-votes { display: inline-block; margin: 3px 0 8px; font-size: 14px; font-weight: 800; color: var(--tier-ink); font-variant-numeric: tabular-nums; }
+  .block {
+    width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 4px 0;
+    border-radius: 14px 14px 6px 6px;
+    background: linear-gradient(180deg, var(--tier), var(--tier-deep));
+    color: #fff;
+  }
+  .s1 .block { height: 120px; }
+  .s2 .block { height: 94px; }
+  .s3 .block { height: 76px; }
+  .block-rank { font-size: 30px; font-weight: 900; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  .block-award { max-width: 94%; margin-top: 7px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.22); font-size: 11.5px; font-weight: 700; line-height: 1.35; word-break: keep-all; }
+  .slot.empty .slot-emoji { box-shadow: none; border: 2px dashed var(--line); color: var(--muted); font-size: 22px; font-weight: 800; }
+  .slot.empty .slot-name { color: var(--muted); }
+  .slot.empty .block { background: var(--tile); color: var(--muted); }
+  .slot.empty .block-award { background: transparent; }
+
+  .ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .rank {
+    display: grid; grid-template-columns: 24px 42px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 10px 14px 10px 10px;
+    border-radius: 16px;
+    background: var(--tile);
+  }
+  .rank .pos { text-align: center; font-size: 15px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rank .emoji { width: 42px; height: 42px; border-radius: 12px; background: var(--card); font-size: 23px; }
+  .rank .body { min-width: 0; }
+  .rank .name { display: flex; align-items: center; gap: 6px; }
+  .rank .name b { min-width: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank .award { flex: none; padding: 1px 7px; border-radius: 999px; background: var(--tier); color: #fff; font-size: 11px; font-weight: 800; }
+  .rank .menu { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank .votes { display: inline-block; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .rank.winner .pos, .rank.winner .votes { color: var(--tier-ink); }
+  .meter { height: 5px; margin-top: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .meter i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #4c8dff); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+  .rank.winner .meter i { background: var(--tier); }
+  .bump { animation: bump .6s ease; }
+
+  /* ───── 알림 ───── */
   .toast {
     position: fixed; left: 50%; z-index: 30;
-    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     transform: translate(-50%, 12px);
     max-width: calc(100% - 32px);
-    padding: 10px 16px; border-radius: 999px;
-    background: rgba(15,27,45,.92); color: #fff;
-    font-size: 14px; text-align: center;
+    padding: 11px 18px; border-radius: 999px;
+    background: rgba(14,26,47,.94); color: #fff;
+    font-size: 14px; font-weight: 600; text-align: center;
     opacity: 0; pointer-events: none;
     transition: opacity .2s, transform .2s;
   }
+  body.bar-on .toast { bottom: calc(var(--bar-h, 96px) + 12px); }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
-
   .spinner {
-    display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 8px;
+    display: inline-block; width: 18px; height: 18px; margin-right: 8px;
     border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
     animation: spin .8s linear infinite;
   }
 
-  /* 대형 화면 모드 (?board) */
+  /* ───── 대형 화면 모드 (?board) ───── */
   body.board { padding-bottom: 24px; }
-  body.board .wrap { max-width: 1280px; }
+  body.board .wrap { max-width: 1400px; }
   body.board .tabs, body.board .banner, body.board .bar { display: none !important; }
-  body.board .hero h1 { font-size: 40px; }
-  body.board .lead { font-size: 18px; }
-  @media (min-width: 900px) {
+  body.board .hero { padding-block: 22px 66px; }
+  body.board .hero-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  body.board .hero h1 { font-size: 46px; }
+  body.board .hero h1 br, body.board .lead { display: none; }
+  body.board .hero h1 em { margin-left: .25em; }
+  body.board .prizes { margin: 0; width: min(100%, 460px); }
+  @media (min-width: 1000px) {
+    body.board .card { padding: 28px 32px; }
+    body.board .rank-layout { display: grid; grid-template-columns: 5fr 7fr; align-items: center; gap: 40px; }
+    body.board .podium { margin: 0; gap: 14px; }
+    body.board .slot-emoji { width: 88px; height: 88px; font-size: 44px; }
+    body.board .s1 .slot-emoji { width: 110px; height: 110px; font-size: 56px; }
+    body.board .s1:not(.empty) .slot-emoji::before { top: -36px; font-size: 32px; }
+    body.board .slot-name { font-size: 21px; }
+    body.board .slot-votes { font-size: 22px; }
+    body.board .s1 .block { height: 230px; }
+    body.board .s2 .block { height: 185px; }
+    body.board .s3 .block { height: 150px; }
+    body.board .block-rank { font-size: 52px; }
+    body.board .block-award { font-size: 16px; padding: 3px 12px; }
     body.board .ranks {
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: repeat(var(--rows, 10), auto);
+      grid-template-rows: repeat(var(--rows, 9), auto);
       grid-auto-flow: column;
-      column-gap: 16px;
+      column-gap: 12px;
     }
+    body.board .ranks { gap: 7px 12px; }
+    body.board .rank { padding: 7px 14px 7px 8px; grid-template-columns: 24px 38px minmax(0, 1fr) auto; }
+    body.board .rank .emoji { width: 38px; height: 38px; font-size: 21px; }
+    body.board .rank .name b, body.board .rank .votes { font-size: 18px; }
+    body.board .rank .meter { margin-top: 4px; }
+    body.board .rank-meta { margin-bottom: 14px; font-size: 15px; }
   }
-  body.board .rank { padding: 14px 18px; }
-  body.board .rank .line b, body.board .rank .votes { font-size: 21px; }
-  body.board .rank .sub { font-size: 14px; }
-  body.board .rank-meta { font-size: 15px; }
 
   @keyframes fade { from { opacity: 0; } }
   @keyframes up { from { transform: translateY(100%); } }
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes pulse { 50% { opacity: .3; } }
-  @keyframes bump { 35% { transform: scale(1.3); color: var(--sky); } }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  @keyframes bump { 35% { transform: scale(1.3); color: var(--blue); } }
+  @keyframes float { 50% { transform: translateY(-4px); } }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   }
 </style>
 </head>
 <body>
 
 <header class="hero">
-  <div class="wrap">
-    <p class="eyebrow" id="festival"></p>
-    <h1 id="title"></h1>
-    <p class="lead">가장 맛있었던 부스에 투표해 주세요.<br>최대 <b id="maxText">2</b>개까지 고를 수 있어요.</p>
-    <ul class="awards">
-      <li><span class="medal gold">1</span>교장상</li>
-      <li><span class="medal silver">2</span>생도대장상</li>
-      <li><span class="medal bronze">3</span>생도전대장상</li>
-    </ul>
+  <svg class="sky-art" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="trail" gradientUnits="userSpaceOnUse" x1="-20" y1="205" x2="287" y2="52">
+        <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#fff" stop-opacity=".5"/>
+      </linearGradient>
+    </defs>
+    <path d="M-22 200.5L285.3 47.7" stroke="url(#trail)" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M-17.8 209.5L289.7 56.7" stroke="url(#trail)" stroke-width="1.6" stroke-linecap="round"/>
+    <g transform="translate(300 46) rotate(63.5) scale(1.25) translate(-11.5 -12)" fill="#fff">
+      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+    </g>
+  </svg>
+  <div class="wrap hero-inner">
+    <div>
+      <p class="eyebrow"><span aria-hidden="true">✈︎</span><span id="festival"></span></p>
+      <h1 id="title"></h1>
+      <p class="lead">가장 맛있었던 부스에 투표해 주세요.<br>최대 <b id="maxText">2</b>곳까지 고를 수 있어요.</p>
+    </div>
+    <ol class="prizes">
+      <li class="p1"><span class="medal">🥇</span><small>1등</small><b>교장상</b></li>
+      <li><span class="medal">🥈</span><small>2등</small><b>생도대장상</b></li>
+      <li><span class="medal">🥉</span><small>3등</small><b>생도전대장상</b></li>
+    </ol>
   </div>
 </header>
 
@@ -404,16 +552,19 @@
 
       <section class="card">
         <h2><span class="step">2</span>부스 선택 <span class="count" id="count"></span></h2>
-        <ul class="booths" id="booths"></ul>
+        <ul class="tiles" id="booths"></ul>
       </section>
     </form>
 
     <!-- 완료 화면 -->
     <section class="card center" id="doneView" hidden>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div class="done-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2 id="doneTitle">투표 완료!</h2>
       <p>마음이 바뀌면 언제든 다시 투표할 수 있어요.<br>마지막 투표만 반영됩니다.</p>
-      <dl class="summary" id="doneSummary"></dl>
+      <div class="ticket">
+        <div class="ticket-head"><span>🎟️ 나의 투표</span><b id="ticketWho"></b></div>
+        <div class="ticket-body" id="ticketPicks"></div>
+      </div>
       <div class="stack">
         <button class="btn primary" type="button" data-goto="rank">실시간 순위 보기</button>
         <button class="btn ghost" type="button" id="changeBtn">투표 변경하기</button>
@@ -422,7 +573,7 @@
 
     <!-- 투표 기간 아님 -->
     <section class="card center" id="closedView" hidden>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div class="done-badge clock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
       <h2 id="closedTitle"></h2>
       <p id="closedText"></p>
       <div class="stack">
@@ -442,12 +593,18 @@
       <b id="rankHiddenTitle"></b>
       <span id="rankHiddenText"></span>
     </div>
-    <ol class="ranks" id="ranks"></ol>
+    <div class="rank-layout" id="rankLayout" hidden>
+      <div class="podium" id="podium"></div>
+      <ol class="ranks" id="ranks"></ol>
+    </div>
   </section>
 </main>
 
 <div class="bar" id="bar">
-  <div class="wrap"><button class="btn primary" id="submitBtn" type="button" disabled></button></div>
+  <div class="wrap">
+    <div class="picks" id="pickChips" hidden></div>
+    <button class="btn primary" id="submitBtn" type="button" disabled></button>
+  </div>
 </div>
 
 <div class="backdrop" id="sheet" hidden>
@@ -469,8 +626,8 @@
    설정 — 이 부분만 고치면 됩니다 (자세한 방법은 README.md)
    ================================================================ */
 const CONFIG = {
-  festival: '공군사관학교 축제',
-  title: '푸드코트 인기 투표',
+  festival: '공군사관학교 · 2026 성무제',
+  title: '푸드코트 인기 투표', // 첫 단어 다음 줄은 금색으로 표시됨
 
   // 구글 시트 '설정' 탭의 '웹페이지 연결 링크'를 그대로 붙여넣으세요.
   // 비워두면 테스트 모드로 동작합니다(실제로 저장되지 않음).
@@ -488,28 +645,28 @@ const CONFIG = {
   companies: Array.from({ length: 8 }, (_, i) => `${i + 1}중대`),
 
   // 부스 목록 (순서 = 화면의 부스 번호)
-  // name 값이 그대로 구글 시트에 기록되고 집계에 쓰입니다.
+  // name 값이 그대로 구글 시트에 기록되고 집계에 쓰입니다. emoji 는 화면 장식용.
   booths: [
-    { name: '쭈식탁', menu: '돼지고기 바비큐' },
-    { name: '결심당', menu: '카페, 베이커리' },
-    { name: '감자바쓰', menu: '벨지안 감자튀김' },
-    { name: '광풍덮밥', menu: '큐브스테이크덮밥' },
-    { name: '생활실 출입버거', menu: '햄버거' },
-    { name: '방콕특별시', menu: '카우카무(족발덮밥), 밀크티' },
-    { name: '뚜기 분식집', menu: '떡볶이, 디저트' },
-    { name: '공사N하노이쌈', menu: '분짜, 반미' },
-    { name: '꼬작사(꼬치작전사령부)', menu: '뼈통삼겹꼬치' },
-    { name: '4전&비', menu: '전' },
-    { name: '홀리몰리 과카몰리', menu: '과카몰리 샌드위치' },
-    { name: '불초밥집', menu: '불초밥' },
-    { name: '성무길감자', menu: '길감자' },
-    { name: 'Cafe Spring', menu: '무알콜칵테일' },
-    { name: 'MO지리MO임', menu: '불닭오믈렛, 해쉬브라운, 대패삼겹살' },
-    { name: '성무반점', menu: '짜장면, 우동' },
-    { name: '암탉과 수탉', menu: '구운치킨' },
-    { name: '빼앰', menu: '아이스크림' },
-    { name: '산도 식당', menu: '튀김 산도' },
-    { name: '핫까시🦅', menu: '핫도그, 떡꼬치' },
+    { emoji: '🍖', name: '쭈식탁', menu: '돼지고기 바비큐' },
+    { emoji: '🥐', name: '결심당', menu: '카페, 베이커리' },
+    { emoji: '🍟', name: '감자바쓰', menu: '벨지안 감자튀김' },
+    { emoji: '🥩', name: '광풍덮밥', menu: '큐브스테이크덮밥' },
+    { emoji: '🍔', name: '생활실 출입버거', menu: '햄버거' },
+    { emoji: '🥤', name: '방콕특별시', menu: '카우카무(족발덮밥), 밀크티' },
+    { emoji: '🌶️', name: '뚜기 분식집', menu: '떡볶이, 디저트' },
+    { emoji: '🍜', name: '공사N하노이쌈', menu: '분짜, 반미' },
+    { emoji: '🍢', name: '꼬작사(꼬치작전사령부)', menu: '뼈통삼겹꼬치' },
+    { emoji: '🥞', name: '4전&비', menu: '전' },
+    { emoji: '🥑', name: '홀리몰리 과카몰리', menu: '과카몰리 샌드위치' },
+    { emoji: '🍣', name: '불초밥집', menu: '불초밥' },
+    { emoji: '🥔', name: '성무길감자', menu: '길감자' },
+    { emoji: '🍹', name: 'Cafe Spring', menu: '무알콜칵테일' },
+    { emoji: '🍳', name: 'MO지리MO임', menu: '불닭오믈렛, 해쉬브라운, 대패삼겹살' },
+    { emoji: '🥢', name: '성무반점', menu: '짜장면, 우동' },
+    { emoji: '🍗', name: '암탉과 수탉', menu: '구운치킨' },
+    { emoji: '🍦', name: '빼앰', menu: '아이스크림' },
+    { emoji: '🥪', name: '산도 식당', menu: '튀김 산도' },
+    { emoji: '🌭', name: '핫까시🦅', menu: '핫도그, 떡꼬치' },
   ],
 
   // 투표 가능 시간 (비워두면 항상 열림). 예: '2026-11-01T11:00:00+09:00'
@@ -520,20 +677,34 @@ const CONFIG = {
 
 const FIELDS = ['기수', '중대', '이름', '부스1', '부스2'];
 const AWARDS = ['교장상', '생도대장상', '생도전대장상'];
-const STORE_KEY = 'foodcourt-vote:' + CONFIG.festival + ':' + CONFIG.title;
+const STORE_KEY = 'foodcourt-vote:v1';
+const CONFETTI_SRC = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js';
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const params = new URLSearchParams(location.search);
 const BOARD = params.has('board');
+
+const BOOTHS = CONFIG.booths.map((b, i) => ({ ...b, emoji: b.emoji || '🍽️', no: i + 1 }));
+const boothByName = Object.fromEntries(BOOTHS.map((b) => [b.name, b]));
 
 const $ = (id) => document.getElementById(id);
 const els = {
   banner: $('banner'), tabs: document.querySelectorAll('.tab'),
   voteArea: $('voteArea'), voteView: $('voteView'), doneView: $('doneView'), closedView: $('closedView'),
   gisu: $('gisu'), company: $('company'), name: $('name'), booths: $('booths'), count: $('count'),
-  bar: $('bar'), submitBtn: $('submitBtn'), sheet: $('sheet'), changeBtn: $('changeBtn'),
-  confirmSummary: $('confirmSummary'), doneSummary: $('doneSummary'),
+  bar: $('bar'), pickChips: $('pickChips'), submitBtn: $('submitBtn'), sheet: $('sheet'), changeBtn: $('changeBtn'),
+  confirmSummary: $('confirmSummary'), ticketWho: $('ticketWho'), ticketPicks: $('ticketPicks'),
   cancelBtn: $('cancelBtn'), confirmBtn: $('confirmBtn'), toast: $('toast'),
-  rankView: $('rankView'), ranks: $('ranks'), rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
+  rankView: $('rankView'), rankLayout: $('rankLayout'), podium: $('podium'), ranks: $('ranks'),
+  rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
 };
+
+// 안전하게 요소를 만드는 도우미 (textContent 사용)
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+}
 
 const storage = {
   get() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } },
@@ -608,6 +779,14 @@ function showVoteState(state) {
 
 function updateBar() {
   els.bar.hidden = BOARD || tab !== 'vote' || voteState !== 'form';
+  syncBar();
+}
+
+// 하단 바 높이만큼 본문 여백과 알림 위치를 맞춤
+function syncBar() {
+  const on = !els.bar.hidden;
+  document.body.classList.toggle('bar-on', on);
+  if (on) document.body.style.setProperty('--bar-h', `${els.bar.offsetHeight}px`);
 }
 
 els.tabs.forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
@@ -616,61 +795,78 @@ document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('clic
 /* ───────────── 투표 ───────────── */
 
 function renderBooths() {
-  const frag = document.createDocumentFragment();
-  CONFIG.booths.forEach((booth, i) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <label class="booth">
-        <input type="checkbox" name="booth">
-        <span class="num"></span>
-        <span class="info"><b></b><small></small></span>
-        <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
-      </label>`;
-    li.querySelector('input').value = booth.name;
-    li.querySelector('.num').textContent = i + 1;
-    li.querySelector('b').textContent = booth.name;
-    li.querySelector('small').textContent = booth.menu || '';
-    if (!booth.menu) li.querySelector('small').remove();
-    frag.append(li);
-  });
-  els.booths.append(frag);
+  for (const b of BOOTHS) {
+    const li = el('li');
+    const label = el('label', 'tile');
+    const input = el('input');
+    input.type = 'checkbox';
+    input.value = b.name;
+    const top = el('span', 'tile-top');
+    top.append(el('span', 'emoji', b.emoji), el('span', 'no', String(b.no).padStart(2, '0')));
+    const tick = el('span', 'tick');
+    tick.innerHTML = CHECK_SVG;
+    label.append(input, top, tick, el('b', 'tile-name', b.name));
+    if (b.menu) label.append(el('span', 'tile-menu', b.menu));
+    li.append(label);
+    els.booths.append(li);
+  }
 }
 
 // 선택 순서를 유지하기 위해 따로 기록
 let picks = [];
+
+const boxFor = (name) => [...els.booths.querySelectorAll('input')].find((b) => b.value === name);
+
+function setChecked(box, on) {
+  box.checked = on;
+  box.closest('.tile').classList.toggle('on', on);
+}
 
 function updatePicks() {
   const full = picks.length >= CONFIG.maxPicks;
   els.booths.classList.toggle('full', full);
   els.count.textContent = `${picks.length} / ${CONFIG.maxPicks}`;
   els.count.classList.toggle('full', full);
+
   els.submitBtn.disabled = picks.length === 0;
-  els.submitBtn.textContent = picks.length ? `투표하기 (${picks.length}/${CONFIG.maxPicks})` : '부스를 선택해 주세요';
+  if (picks.length) els.submitBtn.replaceChildren('투표하기', el('span', 'badge', `${picks.length}/${CONFIG.maxPicks}`));
+  else els.submitBtn.textContent = '부스를 골라주세요';
+
+  els.pickChips.replaceChildren(...picks.map((name) => {
+    const chip = el('button', 'chip');
+    chip.type = 'button';
+    chip.setAttribute('aria-label', `${name} 선택 취소`);
+    chip.append(el('span', null, boothByName[name].emoji), el('span', null, name), el('span', 'chip-x', '✕'));
+    chip.addEventListener('click', () => unpick(name));
+    return chip;
+  }));
+  els.pickChips.hidden = !picks.length;
+  syncBar();
+}
+
+function unpick(name) {
+  picks = picks.filter((p) => p !== name);
+  const box = boxFor(name);
+  if (box) setChecked(box, false);
+  updatePicks();
 }
 
 function setPicks(list) {
-  const names = CONFIG.booths.map((b) => b.name);
-  picks = list.filter((n) => names.includes(n)).slice(0, CONFIG.maxPicks);
-  for (const box of els.booths.querySelectorAll('input')) {
-    box.checked = picks.includes(box.value);
-    box.closest('.booth').classList.toggle('on', box.checked);
-  }
+  picks = list.filter((n) => boothByName[n]).slice(0, CONFIG.maxPicks);
+  for (const box of els.booths.querySelectorAll('input')) setChecked(box, picks.includes(box.value));
   updatePicks();
 }
 
 els.booths.addEventListener('change', (e) => {
   const box = e.target;
-  if (box.checked) {
-    if (picks.length >= CONFIG.maxPicks) {
-      box.checked = false;
-      toast(`최대 ${CONFIG.maxPicks}개까지 선택할 수 있어요`);
-      return;
-    }
-    picks.push(box.value);
-  } else {
-    picks = picks.filter((p) => p !== box.value);
+  if (box.checked && picks.length >= CONFIG.maxPicks) {
+    setChecked(box, false);
+    toast(`최대 ${CONFIG.maxPicks}곳까지 고를 수 있어요`);
+    return;
   }
-  box.closest('.booth').classList.toggle('on', box.checked);
+  if (box.checked) picks.push(box.value);
+  else picks = picks.filter((p) => p !== box.value);
+  setChecked(box, box.checked);
   updatePicks();
 });
 
@@ -692,10 +888,10 @@ function validate(v) {
   document.querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
   const failed = checks.find(([, bad]) => bad);
   if (!failed) return true;
-  const [el, , msg] = failed;
-  el.closest('.field').classList.add('invalid');
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => el.focus({ preventScroll: true }), 300);
+  const [input, , msg] = failed;
+  input.closest('.field').classList.add('invalid');
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => input.focus({ preventScroll: true }), 300);
   toast(msg);
   return false;
 }
@@ -704,15 +900,9 @@ function renderSummary(dl, v) {
   dl.replaceChildren();
   const rows = [
     ['투표자', `${v.gisu} ${v.company} ${v.name}`],
-    ...v.booths.map((b, i) => [`선택 ${i + 1}`, b]),
+    ...v.booths.map((b, i) => [`선택 ${i + 1}`, `${boothByName[b]?.emoji || '🍽️'} ${b}`]),
   ];
-  for (const [k, val] of rows) {
-    const dt = document.createElement('dt');
-    const dd = document.createElement('dd');
-    dt.textContent = k;
-    dd.textContent = val;
-    dl.append(dt, dd);
-  }
+  for (const [k, val] of rows) dl.append(el('dt', null, k), el('dd', null, val));
 }
 
 function openSheet(v) {
@@ -760,13 +950,14 @@ els.confirmBtn.addEventListener('click', async () => {
   const v = readForm();
   const changed = !!storage.get();
   els.confirmBtn.disabled = els.cancelBtn.disabled = true;
-  els.confirmBtn.innerHTML = '<span class="spinner"></span>제출 중…';
+  els.confirmBtn.replaceChildren(el('span', 'spinner'), '제출 중…');
   try {
     await sendVote(v);
     const record = { ...v, at: new Date().toISOString() };
     storage.set(record);
     closeSheet();
     showDone(record, changed);
+    celebrate();
   } catch {
     toast('제출에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
   } finally {
@@ -777,11 +968,35 @@ els.confirmBtn.addEventListener('click', async () => {
 });
 
 function showDone(record, changed) {
-  renderSummary(els.doneSummary, record);
   $('doneTitle').textContent = changed ? '투표를 변경했어요!' : '투표 완료!';
+  els.ticketWho.textContent = `${record.gisu} ${record.company} ${record.name}`;
+  els.ticketPicks.replaceChildren(...(record.booths || []).map((name) => {
+    const b = boothByName[name] || { name, emoji: '🍽️' };
+    const text = el('div');
+    text.append(el('b', null, b.name));
+    if (b.menu) text.append(el('small', null, b.menu));
+    const row = el('div', 'ticket-pick');
+    row.append(el('span', 'emoji', b.emoji), text);
+    return row;
+  }));
   els.changeBtn.hidden = votingWindow() !== 'open';
   showVoteState('done');
   window.scrollTo({ top: 0 });
+}
+
+// 투표 완료 꽃가루 (라이브러리를 못 불러오면 조용히 생략)
+function celebrate() {
+  const fire = () => window.confetti && window.confetti({
+    particleCount: 140, spread: 75, startVelocity: 38, origin: { y: 0.3 },
+    colors: ['#f2b01e', '#ffe08a', '#2563eb', '#93c5fd', '#ffffff'],
+    disableForReducedMotion: true,
+  });
+  if (window.confetti) return fire();
+  const s = document.createElement('script');
+  s.src = CONFETTI_SRC;
+  s.async = true;
+  s.onload = fire;
+  document.head.append(s);
 }
 
 els.changeBtn.addEventListener('click', () => {
@@ -811,6 +1026,7 @@ function formatTime(d) {
 let liveTimer = null;
 let liveBusy = false;
 let lastLive = null;
+let prevVotes = {};
 
 function startLive() {
   if (liveTimer) return;
@@ -856,8 +1072,8 @@ function showRankMessage(title, text) {
   $('rankHiddenTitle').textContent = title;
   $('rankHiddenText').textContent = text;
   els.rankHidden.hidden = false;
+  els.rankLayout.hidden = true;
   els.rankMeta.textContent = '';
-  els.ranks.replaceChildren();
 }
 
 function renderLive(data, failed) {
@@ -877,7 +1093,7 @@ function renderLive(data, failed) {
 }
 
 function rankRows(counts) {
-  const rows = CONFIG.booths.map((b, i) => ({ ...b, no: i + 1, votes: Number(counts[b.name]) || 0 }));
+  const rows = BOOTHS.map((b) => ({ ...b, votes: Number(counts[b.name]) || 0 }));
   rows.sort((a, b) => b.votes - a.votes || a.no - b.no);
   for (const r of rows) {
     r.rank = 1 + rows.filter((o) => o.votes > r.votes).length;
@@ -886,46 +1102,70 @@ function rankRows(counts) {
   return rows;
 }
 
-function createRankItem(r) {
-  const li = document.createElement('li');
-  li.className = 'rank';
-  li.dataset.key = r.name;
-  li.innerHTML = `
-    <span class="pos"></span>
-    <div class="body">
-      <div class="line"><b></b><span class="votes"></span></div>
-      <div class="sub"><span class="award"></span><span class="menu"></span></div>
-      <div class="meter"><i></i></div>
-    </div>`;
-  li.querySelector('b').textContent = r.name;
-  li.querySelector('.menu').textContent = r.menu ? `${r.no}번 · ${r.menu}` : `${r.no}번`;
-  return li;
-}
+const awardLabel = (r) => AWARDS[r.rank - 1] + (r.tied ? ' · 공동' : '');
 
-function fillRankItem(li, r, max) {
-  const top = r.votes > 0 && r.rank <= 3 ? r.rank : 0;
-  li.className = 'rank' + (top ? ` r${top}` : '');
-  li.querySelector('.pos').textContent = r.votes > 0 ? r.rank : '–';
-
-  const votes = li.querySelector('.votes');
-  const text = `${r.votes}표`;
-  if (votes.textContent && votes.textContent !== text) {
-    votes.classList.remove('bump');
-    void votes.offsetWidth;
-    votes.classList.add('bump');
+// 표 수가 바뀌었으면 숫자를 살짝 튀게 함
+function setVotes(node, name, votes) {
+  const changed = prevVotes[name] !== undefined && prevVotes[name] !== votes;
+  node.textContent = `${votes}표`;
+  if (changed) {
+    node.classList.remove('bump');
+    void node.offsetWidth;
+    node.classList.add('bump');
   }
-  votes.textContent = text;
-
-  const award = li.querySelector('.award');
-  award.hidden = !top;
-  if (top) award.textContent = AWARDS[top - 1] + (r.tied ? ' · 공동' : '');
-  li.querySelector('.meter i').style.width = `${(r.votes / max) * 100}%`;
 }
 
 function renderRanks(counts) {
   const rows = rankRows(counts);
   const max = Math.max(1, ...rows.map((r) => r.votes));
+  const top = rows.slice(0, 3).filter((r) => r.votes > 0);
+  els.rankLayout.hidden = false;
+  renderPodium(top);
+  renderList(rows.filter((r) => !top.includes(r)), max);
+  prevVotes = Object.fromEntries(rows.map((r) => [r.name, r.votes]));
+}
 
+// 시상대: 화면 순서는 2등 · 1등 · 3등
+function renderPodium(top) {
+  els.podium.replaceChildren(...[1, 0, 2].map((i) => {
+    const r = top[i];
+    const tier = r ? r.rank : i + 1;
+    const slot = el('div', `slot s${i + 1} t${tier}${r ? '' : ' empty'}`);
+    const votes = el('span', 'slot-votes');
+    if (r) setVotes(votes, r.name, r.votes);
+    const block = el('div', 'block');
+    block.append(el('span', 'block-rank', String(tier)), el('span', 'block-award', r ? awardLabel(r) : AWARDS[i]));
+    slot.append(el('div', 'slot-emoji', r ? r.emoji : '?'), el('b', 'slot-name', r ? r.name : '—'), votes, block);
+    return slot;
+  }));
+}
+
+function createRankItem(r) {
+  const li = el('li', 'rank');
+  li.dataset.key = r.name;
+  const name = el('div', 'name');
+  name.append(el('b', null, r.name), el('span', 'award'));
+  const meter = el('div', 'meter');
+  meter.append(el('i'));
+  const body = el('div', 'body');
+  body.append(name, el('div', 'menu', r.menu ? `${r.no}번 · ${r.menu}` : `${r.no}번`), meter);
+  li.append(el('span', 'pos'), el('span', 'emoji', r.emoji), body, el('span', 'votes'));
+  return li;
+}
+
+function fillRankItem(li, r, max) {
+  // 공동 3위처럼 시상대 밖에도 수상 대상이 있을 수 있음
+  const tier = r.votes > 0 && r.rank <= 3 ? r.rank : 0;
+  li.className = 'rank' + (tier ? ` winner t${tier}` : '');
+  li.querySelector('.pos').textContent = r.votes > 0 ? r.rank : '–';
+  setVotes(li.querySelector('.votes'), r.name, r.votes);
+  const award = li.querySelector('.award');
+  award.hidden = !tier;
+  if (tier) award.textContent = awardLabel(r);
+  li.querySelector('.meter i').style.width = `${(r.votes / max) * 100}%`;
+}
+
+function renderList(rows, max) {
   // 순위가 바뀐 항목이 제자리로 미끄러지듯 이동하도록 이전 위치를 기억
   const before = new Map();
   const existing = new Map();
@@ -933,6 +1173,8 @@ function renderRanks(counts) {
     before.set(li.dataset.key, li.getBoundingClientRect());
     existing.set(li.dataset.key, li);
   }
+  const keep = new Set(rows.map((r) => r.name));
+  for (const [key, li] of existing) if (!keep.has(key)) li.remove();
 
   els.ranks.style.setProperty('--rows', Math.ceil(rows.length / 2));
   for (const r of rows) {
@@ -957,7 +1199,8 @@ function renderRanks(counts) {
 
 function init() {
   $('festival').textContent = CONFIG.festival;
-  $('title').textContent = CONFIG.title;
+  const [first, ...rest] = CONFIG.title.split(' ');
+  $('title').replaceChildren(first, el('br'), el('em', null, rest.join(' ')));
   $('maxText').textContent = CONFIG.maxPicks;
   document.title = CONFIG.title;
   document.body.classList.toggle('board', BOARD);
@@ -976,10 +1219,11 @@ function init() {
   renderBooths();
   updatePicks();
 
-  for (const el of [els.gisu, els.company, els.name]) {
-    el.addEventListener('input', () => el.closest('.field').classList.remove('invalid'));
+  for (const input of [els.gisu, els.company, els.name]) {
+    input.addEventListener('input', () => input.closest('.field').classList.remove('invalid'));
   }
   els.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); els.name.blur(); } });
+  window.addEventListener('resize', syncBar);
 
   const win = votingWindow();
   const saved = storage.get();
