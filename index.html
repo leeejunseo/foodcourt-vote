@@ -562,7 +562,7 @@
       <li><span class="medal">🥈</span><small>2등</small><b>생도대장상</b></li>
       <li><span class="medal">🥉</span><small>3등</small><b>생도전대장상</b></li>
     </ol>
-    <p class="rule">🤝 동점이면 <b>그 부스 한 곳만 고른 표</b>가 많은 쪽이 이겨요. 그래도 같으면 시상식에서 추첨!</p>
+    <p class="rule">※ 득표수가 같으면 <b>해당 부스 한 곳만 선택한 표(단독 지지)</b>가 많은 부스를 상위로 결정합니다.</p>
   </div>
 </header>
 
@@ -649,7 +649,7 @@
     <div class="rank-layout" id="rankLayout" hidden>
       <div class="podium" id="podium"></div>
       <ol class="ranks" id="ranks"></ol>
-      <p class="hint rank-rule">동점이면 단독 지지(그 부스 한 곳만 고른 표)가 많은 쪽이 앞서요.</p>
+      <p class="hint rank-rule">※ 득표수가 같으면 단독 지지(해당 부스 한 곳만 선택한 표)가 많은 부스를 상위로 결정합니다.</p>
     </div>
   </section>
 
@@ -1337,7 +1337,7 @@ function renderLive(data, failed) {
   renderRanks(data.counts || {}, data.solo || {});
 }
 
-// 순위: 득표수 → 동점이면 단독 지지(그 부스 한 곳만 고른 표) → 그래도 같으면 같은 순위(시상식 추첨)
+// 순위: 득표수 → 동점이면 단독 지지(그 부스 한 곳만 고른 표) → 그래도 같으면 같은 순위(동점)
 function rankRows(counts, solo = {}) {
   const rows = BOOTHS.map((b) => ({ ...b, votes: Number(counts[b.name]) || 0, solo: Number(solo[b.name]) || 0 }));
   const ahead = (o, r) => o.votes > r.votes || (o.votes === r.votes && o.solo > r.solo);
@@ -1556,7 +1556,7 @@ function renderAdmin(d) {
   els.openBtn.textContent = d.accepting ? '투표 마감하기' : '투표 다시 열기';
   els.adminList.replaceChildren(...rankRows(d.counts || {}, d.solo || {}).map((r) => {
     const li = el('li');
-    const award = r.votes && r.rank <= 3 ? ` ${['🥇', '🥈', '🥉'][r.rank - 1]}${r.tied ? ' 추첨' : ''}` : '';
+    const award = r.votes && r.rank <= 3 ? ` ${['🥇', '🥈', '🥉'][r.rank - 1]}${r.tied ? ' 동점' : ''}` : '';
     li.append(el('span', 'pos', r.votes ? String(r.rank) : '–'), el('span', null, r.emoji), el('span', 'nm', r.name + award), el('span', 'v', `${r.votes}표 · 단독 ${r.solo}`));
     return li;
   }));
