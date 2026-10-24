@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#06122b">
-<title>푸드코트 인기 투표</title>
+<title>푸드코트 맛 대결</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <style>
@@ -51,6 +51,8 @@
     color: var(--ink);
     line-height: 1.5;
     letter-spacing: -0.01em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
     padding-bottom: 32px;
     -webkit-tap-highlight-color: transparent;
   }
@@ -102,7 +104,8 @@
     -webkit-background-clip: text; background-clip: text;
     color: transparent;
   }
-  .lead { margin: 12px 0 0; font-size: 15px; color: rgba(255,255,255,.82); }
+  .lead { margin: 12px 0 0; font-size: 15px; color: rgba(255,255,255,.82); word-break: keep-all; }
+  .lead b { color: #fff; }
   .prizes { list-style: none; margin: 22px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .prizes li {
     display: flex; flex-direction: column; align-items: center;
@@ -510,7 +513,7 @@
     <div>
       <p class="eyebrow"><span aria-hidden="true">✈︎</span><span id="festival"></span></p>
       <h1 id="title"></h1>
-      <p class="lead">가장 맛있었던 부스에 투표해 주세요.<br>최대 <b id="maxText">2</b>곳까지 고를 수 있어요.</p>
+      <p class="lead">직접 먹어본 메뉴 중 <b>가장 맛있었던 곳</b>은?<br>친분 말고 오직 맛으로! 최대 <b id="maxText">2</b>곳까지 골라주세요.</p>
     </div>
     <ol class="prizes">
       <li class="p1"><span class="medal">🥇</span><small>1등</small><b>교장상</b></li>
@@ -551,7 +554,7 @@
       </section>
 
       <section class="card">
-        <h2><span class="step">2</span>부스 선택 <span class="count" id="count"></span></h2>
+        <h2><span class="step">2</span>가장 맛있었던 부스 <span class="count" id="count"></span></h2>
         <ul class="tiles" id="booths"></ul>
       </section>
     </form>
@@ -560,9 +563,9 @@
     <section class="card center" id="doneView" hidden>
       <div class="done-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2 id="doneTitle">투표 완료!</h2>
-      <p>마음이 바뀌면 언제든 다시 투표할 수 있어요.<br>마지막 투표만 반영됩니다.</p>
+      <p>맛있게 드셨나요?<br>마음이 바뀌면 다시 투표할 수 있어요.</p>
       <div class="ticket">
-        <div class="ticket-head"><span>🎟️ 나의 투표</span><b id="ticketWho"></b></div>
+        <div class="ticket-head"><span>🍽️ 내가 고른 맛</span><b id="ticketWho"></b></div>
         <div class="ticket-body" id="ticketPicks"></div>
       </div>
       <div class="stack">
@@ -585,7 +588,7 @@
   <!-- 실시간 순위 -->
   <section class="card" id="rankView" hidden>
     <div class="rank-head">
-      <h2>실시간 순위</h2>
+      <h2>실시간 맛 순위</h2>
       <span class="live off" id="liveBadge"><i></i>LIVE</span>
     </div>
     <p class="rank-meta" id="rankMeta">불러오는 중…</p>
@@ -627,7 +630,7 @@
    ================================================================ */
 const CONFIG = {
   festival: '공군사관학교 · 2026 성무제',
-  title: '푸드코트 인기 투표', // 첫 단어 다음 줄은 금색으로 표시됨
+  title: '푸드코트 맛 대결', // 첫 단어 다음 줄은 금색으로 표시됨
 
   // 구글 시트 '설정' 탭의 '웹페이지 연결 링크'를 그대로 붙여넣으세요.
   // 비워두면 테스트 모드로 동작합니다(실제로 저장되지 않음).
@@ -830,7 +833,7 @@ function updatePicks() {
 
   els.submitBtn.disabled = picks.length === 0;
   if (picks.length) els.submitBtn.replaceChildren('투표하기', el('span', 'badge', `${picks.length}/${CONFIG.maxPicks}`));
-  else els.submitBtn.textContent = '부스를 골라주세요';
+  else els.submitBtn.textContent = '맛있었던 부스를 골라주세요';
 
   els.pickChips.replaceChildren(...picks.map((name) => {
     const chip = el('button', 'chip');
