@@ -422,6 +422,10 @@
     word-break: keep-all;
   }
   .slot-votes { display: inline-block; margin: 3px 0 8px; font-size: 14px; font-weight: 800; color: var(--tier-ink); font-variant-numeric: tabular-nums; }
+  .slot-solo { margin: -6px 0 8px; font-size: 11.5px; color: var(--muted); }
+  .rank-rule { margin-top: 14px; text-align: center; }
+  .rule { margin: 14px 0 0; font-size: 12.5px; color: rgba(255,255,255,.72); }
+  .rule b { color: #fff; }
   .block {
     width: 100%;
     display: flex; flex-direction: column; align-items: center;
@@ -432,9 +436,9 @@
   }
   .s1 .block { height: 120px; }
   .s2 .block { height: 94px; }
-  .s3 .block { height: 76px; }
+  .s3 .block { height: 84px; }
   .block-rank { font-size: 30px; font-weight: 900; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,.15); }
-  .block-award { max-width: 94%; margin-top: 7px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.22); font-size: 11.5px; font-weight: 700; line-height: 1.35; word-break: keep-all; }
+  .block-award { max-width: 96%; margin-top: 7px; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,.22); font-size: 11px; font-weight: 700; line-height: 1.35; letter-spacing: -0.03em; word-break: keep-all; }
   .slot.empty .slot-emoji { box-shadow: none; border: 2px dashed var(--line); color: var(--muted); font-size: 22px; font-weight: 800; }
   .slot.empty .slot-name { color: var(--muted); }
   .slot.empty .block { background: var(--tile); color: var(--muted); }
@@ -488,7 +492,7 @@
   body.board .hero { padding-block: 22px 66px; }
   body.board .hero-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
   body.board .hero h1 { font-size: 46px; }
-  body.board .hero h1 br, body.board .lead { display: none; }
+  body.board .hero h1 br, body.board .lead, body.board .rule, body.board .rank-rule { display: none; }
   body.board .hero h1 em { margin-left: .25em; }
   body.board .prizes { margin: 0; width: min(100%, 460px); }
   @media (min-width: 1000px) {
@@ -558,6 +562,7 @@
       <li><span class="medal">🥈</span><small>2등</small><b>생도대장상</b></li>
       <li><span class="medal">🥉</span><small>3등</small><b>생도전대장상</b></li>
     </ol>
+    <p class="rule">🤝 동점이면 <b>그 부스 한 곳만 고른 표</b>가 많은 쪽이 이겨요. 그래도 같으면 시상식에서 추첨!</p>
   </div>
 </header>
 
@@ -644,6 +649,7 @@
     <div class="rank-layout" id="rankLayout" hidden>
       <div class="podium" id="podium"></div>
       <ol class="ranks" id="ranks"></ol>
+      <p class="hint rank-rule">동점이면 단독 지지(그 부스 한 곳만 고른 표)가 많은 쪽이 앞서요.</p>
     </div>
   </section>
 
@@ -1328,20 +1334,23 @@ function renderLive(data, failed) {
   els.rankMeta.textContent = failed
     ? `연결이 불안정해요 · ${time} 기준 결과`
     : `참여 ${data.voters || 0}명 · ${time} 기준 · ${CONFIG.liveRefreshSec}초마다 갱신`;
-  renderRanks(data.counts || {});
+  renderRanks(data.counts || {}, data.solo || {});
 }
 
-function rankRows(counts) {
-  const rows = BOOTHS.map((b) => ({ ...b, votes: Number(counts[b.name]) || 0 }));
-  rows.sort((a, b) => b.votes - a.votes || a.no - b.no);
+// 순위: 득표수 → 동점이면 단독 지지(그 부스 한 곳만 고른 표) → 그래도 같으면 같은 순위(시상식 추첨)
+function rankRows(counts, solo = {}) {
+  const rows = BOOTHS.map((b) => ({ ...b, votes: Number(counts[b.name]) || 0, solo: Number(solo[b.name]) || 0 }));
+  const ahead = (o, r) => o.votes > r.votes || (o.votes === r.votes && o.solo > r.solo);
+  rows.sort((a, b) => b.votes - a.votes || b.solo - a.solo || a.no - b.no);
   for (const r of rows) {
-    r.rank = 1 + rows.filter((o) => o.votes > r.votes).length;
-    r.tied = rows.filter((o) => o.votes === r.votes).length > 1;
+    r.rank = 1 + rows.filter((o) => ahead(o, r)).length;
+    r.tied = rows.filter((o) => o.votes === r.votes && o.solo === r.solo).length > 1;
+    r.voteTie = r.votes > 0 && rows.filter((o) => o.votes === r.votes).length > 1; // 단독 지지로 갈린 경우 표시용
   }
   return rows;
 }
 
-const awardLabel = (r) => AWARDS[r.rank - 1] + (r.tied ? ' · 공동' : '');
+const awardLabel = (r) => AWARDS[r.rank - 1] + (r.tied ? ' · 동점' : '');
 
 // 표 수가 바뀌었으면 숫자를 살짝 튀게 함
 function setVotes(node, name, votes) {
@@ -1354,8 +1363,8 @@ function setVotes(node, name, votes) {
   }
 }
 
-function renderRanks(counts) {
-  const rows = rankRows(counts);
+function renderRanks(counts, solo) {
+  const rows = rankRows(counts, solo);
   const max = Math.max(1, ...rows.map((r) => r.votes));
   const top = rows.slice(0, 3).filter((r) => r.votes > 0);
   els.rankLayout.hidden = false;
@@ -1374,7 +1383,9 @@ function renderPodium(top) {
     if (r) setVotes(votes, r.name, r.votes);
     const block = el('div', 'block');
     block.append(el('span', 'block-rank', String(tier)), el('span', 'block-award', r ? awardLabel(r) : AWARDS[i]));
-    slot.append(el('div', 'slot-emoji', r ? r.emoji : '?'), el('b', 'slot-name', r ? r.name : '—'), votes, block);
+    slot.append(el('div', 'slot-emoji', r ? r.emoji : '?'), el('b', 'slot-name', r ? r.name : '—'), votes);
+    if (r && r.voteTie) slot.append(el('small', 'slot-solo', `단독 지지 ${r.solo}`));
+    slot.append(block);
     return slot;
   }));
 }
@@ -1387,7 +1398,7 @@ function createRankItem(r) {
   const meter = el('div', 'meter');
   meter.append(el('i'));
   const body = el('div', 'body');
-  body.append(name, el('div', 'menu', r.menu ? `${r.no}번 · ${r.menu}` : `${r.no}번`), meter);
+  body.append(name, el('div', 'menu'), meter);
   li.append(el('span', 'pos'), el('span', 'emoji', r.emoji), body, el('span', 'votes'));
   return li;
 }
@@ -1401,6 +1412,8 @@ function fillRankItem(li, r, max) {
   const award = li.querySelector('.award');
   award.hidden = !tier;
   if (tier) award.textContent = awardLabel(r);
+  const menu = r.menu ? `${r.no}번 · ${r.menu}` : `${r.no}번`;
+  li.querySelector('.menu').textContent = r.voteTie ? `단독 지지 ${r.solo} · ${menu}` : menu;
   li.querySelector('.meter i').style.width = `${(r.votes / max) * 100}%`;
 }
 
@@ -1541,9 +1554,10 @@ function renderAdmin(d) {
   setStat(els.statAccepting, d.accepting ? '접수 중' : '마감', d.accepting);
   els.hideBtn.textContent = d.hidden ? '순위 공개하기' : '순위 숨기기';
   els.openBtn.textContent = d.accepting ? '투표 마감하기' : '투표 다시 열기';
-  els.adminList.replaceChildren(...rankRows(d.counts || {}).map((r) => {
+  els.adminList.replaceChildren(...rankRows(d.counts || {}, d.solo || {}).map((r) => {
     const li = el('li');
-    li.append(el('span', 'pos', r.votes ? String(r.rank) : '–'), el('span', null, r.emoji), el('span', 'nm', r.name), el('span', 'v', `${r.votes}표`));
+    const award = r.votes && r.rank <= 3 ? ` ${['🥇', '🥈', '🥉'][r.rank - 1]}${r.tied ? ' 추첨' : ''}` : '';
+    li.append(el('span', 'pos', r.votes ? String(r.rank) : '–'), el('span', null, r.emoji), el('span', 'nm', r.name + award), el('span', 'v', `${r.votes}표 · 단독 ${r.solo}`));
     return li;
   }));
   syncClosed(!d.accepting);
