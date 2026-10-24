@@ -321,6 +321,8 @@
   .admin-list .pos { text-align: center; font-weight: 800; color: var(--muted); }
   .admin-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .admin-list .v { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .staff-off { display: block; margin: 18px auto 0; padding: 8px 14px; border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
+  .pin-error { min-height: 1.3em; margin: 0; color: var(--danger); font-size: 13px; font-weight: 600; }
   .btn .badge {
     display: inline-grid; place-items: center;
     min-width: 26px; height: 24px; margin-left: 8px; padding: 0 8px;
@@ -663,6 +665,7 @@
     </div>
     <h3 class="admin-sub">전체 순위 <small class="hint">· 운영본부 전용, 순위를 숨겨도 보여요</small></h3>
     <ol class="admin-list" id="adminList"></ol>
+    <button class="staff-off" type="button" id="staffOffBtn">이 폰의 운영본부 모드 끄기</button>
   </section>
 </main>
 
@@ -684,6 +687,22 @@
       <button class="btn primary" id="confirmBtn" type="button">투표하기</button>
     </div>
   </div>
+</div>
+
+<div class="backdrop" id="pinSheet" hidden>
+  <form class="sheet" id="pinForm" role="dialog" aria-modal="true" aria-labelledby="pinTitle" novalidate>
+    <h3 id="pinTitle">🛎️ 운영본부 확인</h3>
+    <p class="hint">운영본부 PIN을 입력하세요. 확인되면 이 폰이 운영본부 모드로 바뀝니다.</p>
+    <label class="field" style="margin-top:14px">
+      <span>PIN</span>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="off" enterkeyhint="go">
+    </label>
+    <p class="pin-error" id="pinError"></p>
+    <div class="actions">
+      <button class="btn ghost" id="pinCancel" type="button">취소</button>
+      <button class="btn primary" id="pinOk" type="submit">확인</button>
+    </div>
+  </form>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -755,7 +774,7 @@ const AWARDS = ['교장상', '생도대장상', '생도전대장상'];
 const DEVICE_FIELD = '기기';
 const STORE_KEY = 'foodcourt-vote:v1';
 const DEVICE_KEY = 'foodcourt-device';
-const STAFF_KEY = 'foodcourt-staff';
+const STAFF_KEY = 'foodcourt-staff-token';
 const CONFETTI_SRC = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const params = new URLSearchParams(location.search);
@@ -778,7 +797,9 @@ const els = {
   rankView: $('rankView'), rankLayout: $('rankLayout'), podium: $('podium'), ranks: $('ranks'),
   adminTab: $('adminTab'), adminView: $('adminView'), adminRefresh: $('adminRefresh'), adminMeta: $('adminMeta'),
   statVoters: $('statVoters'), statHidden: $('statHidden'), statAccepting: $('statAccepting'),
-  hideBtn: $('hideBtn'), openBtn: $('openBtn'), adminList: $('adminList'),
+  hideBtn: $('hideBtn'), openBtn: $('openBtn'), adminList: $('adminList'), staffOffBtn: $('staffOffBtn'),
+  pinSheet: $('pinSheet'), pinForm: $('pinForm'), pinInput: $('pinInput'), pinError: $('pinError'),
+  pinOk: $('pinOk'), pinCancel: $('pinCancel'),
   rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
 };
 
@@ -815,15 +836,16 @@ try { form = parseFormLink(CONFIG.formPrefillLink); } catch (e) { formError = e.
 // 구글폼에 '기기' 질문이 있을 때만 기기당 1표가 동작함
 const DEVICE_ON = !!(form && form.ids[DEVICE_FIELD]);
 
-// 운영본부 폰: ?staff=코드 로 한 번 열면 기억함 (?staff=off 로 해제). 코드가 맞는지는 집계 스크립트가 확인함
+// 운영본부 폰: 운영본부 링크(?staff=코드)로 들어와 PIN을 확인받으면 인증 토큰을 기억함 (?staff=off 로 해제).
+// 코드·PIN 확인과 토큰 검사는 모두 Apps Script가 함
+const staffParam = params.get('staff');
 const STAFF = (() => {
-  const code = params.get('staff');
   try {
-    if (code === 'off') localStorage.removeItem(STAFF_KEY);
-    else if (code) localStorage.setItem(STAFF_KEY, code);
+    localStorage.removeItem('foodcourt-staff'); // 예전 방식(코드만 저장) 정리
+    if (staffParam === 'off') localStorage.removeItem(STAFF_KEY);
     return localStorage.getItem(STAFF_KEY);
   } catch {
-    return code && code !== 'off' ? code : null;
+    return null;
   }
 })();
 
@@ -1414,17 +1436,21 @@ function renderList(rows, max) {
 
 /* ───────────── 운영본부 관리 ───────────── */
 
-// Apps Script 웹 앱에 운영본부 코드와 함께 요청 (코드 확인은 Apps Script가 함)
-async function adminCall(action) {
+// Apps Script 웹 앱에 요청 (운영본부 인증 확인은 Apps Script가 함)
+async function staffPost(payload) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
-    const res = await fetch(CONFIG.liveUrl, { method: 'POST', body: JSON.stringify({ code: STAFF, action }), signal: ctrl.signal });
+    const res = await fetch(CONFIG.liveUrl, { method: 'POST', body: JSON.stringify(payload), signal: ctrl.signal });
     let data;
     try {
       data = await res.json();
     } catch {
       throw new Error('운영본부 기능이 아직 서버에 없어요. Apps Script 코드를 바꾸고 새 버전으로 배포해 주세요.');
+    }
+    if (data.auth) {
+      // PIN이 바뀌었거나 잘못된 토큰 → 이 폰의 운영본부 모드를 해제
+      try { localStorage.removeItem(STAFF_KEY); } catch {}
     }
     if (!data.ok) throw new Error(data.error || '요청에 실패했어요.');
     return data;
@@ -1432,6 +1458,49 @@ async function adminCall(action) {
     clearTimeout(timer);
   }
 }
+
+const adminCall = (action) => staffPost({ action, token: STAFF });
+
+// 운영본부 링크로 들어오면 PIN을 확인받고, 맞으면 토큰을 저장한 뒤 새로고침
+function openPinSheet() {
+  els.pinError.textContent = '';
+  els.pinInput.value = '';
+  els.pinSheet.hidden = false;
+  setTimeout(() => els.pinInput.focus(), 100);
+}
+
+els.pinForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pin = els.pinInput.value.trim();
+  if (!pin) return;
+  if (!CONFIG.liveUrl) {
+    els.pinError.textContent = '실시간 집계(liveUrl)가 연결되지 않았어요.';
+    return;
+  }
+  els.pinOk.disabled = true;
+  els.pinError.textContent = '';
+  els.pinOk.replaceChildren(el('span', 'spinner'), '확인 중…');
+  try {
+    const data = await staffPost({ action: 'login', code: staffParam, pin });
+    if (!data.token) throw new Error('PIN 확인 기능이 아직 서버에 없어요. Apps Script 코드를 바꾸고 새 버전으로 배포해 주세요.');
+    localStorage.setItem(STAFF_KEY, data.token);
+    location.replace(location.pathname);
+  } catch (err) {
+    els.pinError.textContent = err.name === 'AbortError' || err instanceof TypeError
+      ? '연결에 실패했어요. 잠시 후 다시 시도해 주세요.'
+      : err.message;
+    els.pinInput.select();
+  } finally {
+    els.pinOk.disabled = false;
+    els.pinOk.textContent = '확인';
+  }
+});
+els.pinCancel.addEventListener('click', () => { els.pinSheet.hidden = true; });
+
+els.staffOffBtn.addEventListener('click', () => confirmTap(els.staffOffBtn, () => {
+  try { localStorage.removeItem(STAFF_KEY); } catch {}
+  location.replace(location.pathname);
+}));
 
 let adminBusy = false;
 let adminState = null;
@@ -1549,6 +1618,7 @@ function init() {
 
   els.adminTab.hidden = !STAFF;
   setTab(BOARD || params.has('rank') ? 'rank' : 'vote');
+  if (staffParam && staffParam !== 'off' && !STAFF) openPinSheet();
 
   // 운영본부에서 투표를 마감했는지 처음 한 번 확인 (순위 탭은 자체적으로 확인함)
   if (tab !== 'rank' && CONFIG.liveUrl) {
