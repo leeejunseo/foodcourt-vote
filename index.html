@@ -124,7 +124,7 @@
 
   /* ───── 탭 ───── */
   .tabs {
-    display: grid; grid-template-columns: 1fr 1fr;
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
     padding: 5px; margin-bottom: 14px;
     background: var(--card);
     border-radius: 16px;
@@ -302,6 +302,25 @@
   .btn.primary { background: linear-gradient(135deg, #0b2350 0%, #2563eb 100%); color: #fff; box-shadow: 0 10px 24px rgba(37,99,235,.3); }
   .btn.primary:disabled { background: var(--line); color: var(--muted); box-shadow: none; cursor: default; }
   .btn.ghost { background: var(--tile); color: var(--ink); }
+  .btn.armed { background: var(--danger); color: #fff; }
+  .btn.ghost:disabled { opacity: .45; cursor: default; }
+
+  /* ───── 운영본부 ───── */
+  .refresh { margin-left: auto; padding: 6px 12px; border: 0; border-radius: 999px; background: var(--tile); color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .stat { padding: 12px 8px; border-radius: 14px; background: var(--tile); text-align: center; }
+  .stat small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .stat b { display: block; margin-top: 2px; font-size: 18px; }
+  .stat b.on { color: var(--blue); }
+  .stat b.off { color: var(--danger); }
+  .admin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .admin-actions .btn { height: 52px; font-size: 15px; }
+  .admin-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; }
+  .admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .admin-list li { display: grid; grid-template-columns: 26px 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--tile); font-size: 14px; }
+  .admin-list .pos { text-align: center; font-weight: 800; color: var(--muted); }
+  .admin-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .admin-list .v { font-weight: 800; font-variant-numeric: tabular-nums; }
   .btn .badge {
     display: inline-grid; place-items: center;
     min-width: 26px; height: 24px; margin-left: 8px; padding: 0 8px;
@@ -544,6 +563,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab" type="button" role="tab" data-tab="vote" aria-selected="true">투표하기</button>
     <button class="tab" type="button" role="tab" data-tab="rank" aria-selected="false"><span class="dot"></span>실시간 순위</button>
+    <button class="tab" type="button" role="tab" data-tab="admin" aria-selected="false" id="adminTab" hidden>운영본부</button>
   </nav>
 
   <div class="banner" id="banner" hidden></div>
@@ -623,6 +643,26 @@
       <div class="podium" id="podium"></div>
       <ol class="ranks" id="ranks"></ol>
     </div>
+  </section>
+
+  <!-- 운영본부 (운영본부 모드에서만 보임) -->
+  <section class="card" id="adminView" hidden>
+    <div class="rank-head">
+      <h2>🛎️ 운영본부</h2>
+      <button class="refresh" type="button" id="adminRefresh">새로고침</button>
+    </div>
+    <p class="rank-meta" id="adminMeta">불러오는 중…</p>
+    <div class="stats">
+      <div class="stat"><small>참여자</small><b id="statVoters">–</b></div>
+      <div class="stat"><small>순위</small><b id="statHidden">–</b></div>
+      <div class="stat"><small>투표</small><b id="statAccepting">–</b></div>
+    </div>
+    <div class="admin-actions">
+      <button class="btn ghost" type="button" id="hideBtn" disabled>순위 숨기기</button>
+      <button class="btn ghost" type="button" id="openBtn" disabled>투표 마감하기</button>
+    </div>
+    <h3 class="admin-sub">전체 순위 <small class="hint">· 운영본부 전용, 순위를 숨겨도 보여요</small></h3>
+    <ol class="admin-list" id="adminList"></ol>
   </section>
 </main>
 
@@ -736,6 +776,9 @@ const els = {
   confirmSummary: $('confirmSummary'), ticketWho: $('ticketWho'), ticketPicks: $('ticketPicks'),
   cancelBtn: $('cancelBtn'), confirmBtn: $('confirmBtn'), toast: $('toast'),
   rankView: $('rankView'), rankLayout: $('rankLayout'), podium: $('podium'), ranks: $('ranks'),
+  adminTab: $('adminTab'), adminView: $('adminView'), adminRefresh: $('adminRefresh'), adminMeta: $('adminMeta'),
+  statVoters: $('statVoters'), statHidden: $('statHidden'), statAccepting: $('statAccepting'),
+  hideBtn: $('hideBtn'), openBtn: $('openBtn'), adminList: $('adminList'),
   rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
 };
 
@@ -834,9 +877,25 @@ function setTab(next) {
   els.tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === next)));
   els.voteArea.hidden = next !== 'vote';
   els.rankView.hidden = next !== 'rank';
+  els.adminView.hidden = next !== 'admin';
   updateBar();
   if (next === 'rank') startLive(); else stopLive();
+  if (next === 'admin') runAdmin('status');
   window.scrollTo({ top: 0 });
+}
+
+// 운영본부에서 투표를 마감하면 일반 페이지도 투표 화면을 닫음 (다시 열면 되돌림)
+let formClosed = false;
+function syncClosed(isClosed) {
+  if (isClosed === formClosed || votingWindow() !== 'open') return;
+  formClosed = isClosed;
+  els.changeBtn.hidden = isClosed || !!STAFF;
+  if (isClosed && voteState === 'form') {
+    closeSheet();
+    showClosed('투표가 마감되었어요', '참여해 주셔서 감사합니다. 결과는 시상식에서 발표됩니다.');
+  } else if (!isClosed && voteState === 'closed') {
+    showVoteState('form');
+  }
 }
 
 function showVoteState(state) {
@@ -1065,6 +1124,7 @@ let sending = false;
 els.submitBtn.addEventListener('click', () => {
   const v = readForm();
   if (!v.booths.length) return;
+  if (formClosed) return toast('투표가 마감되었어요');
   if (validate(v)) openSheet(v);
 });
 els.cancelBtn.addEventListener('click', closeSheet);
@@ -1225,6 +1285,7 @@ function renderLive(data, failed) {
     return;
   }
   if (data.notConnected) return showRankMessage('실시간 순위 준비 중이에요', '곧 순위가 표시됩니다.');
+  if (!failed) syncClosed(!!data.closed);
   if (data.hidden) {
     const joined = data.voters ? `지금까지 ${data.voters}명이 투표했어요. ` : '';
     return showRankMessage('지금은 순위가 비공개예요', `${joined}결과는 시상식에서 발표됩니다.`);
@@ -1340,6 +1401,102 @@ function renderList(rows, max) {
   }
 }
 
+/* ───────────── 운영본부 관리 ───────────── */
+
+// Apps Script 웹 앱에 운영본부 코드와 함께 요청 (코드 확인은 Apps Script가 함)
+async function adminCall(action) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const res = await fetch(CONFIG.liveUrl, { method: 'POST', body: JSON.stringify({ code: STAFF, action }), signal: ctrl.signal });
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('운영본부 기능이 아직 서버에 없어요. Apps Script 코드를 바꾸고 새 버전으로 배포해 주세요.');
+    }
+    if (!data.ok) throw new Error(data.error || '요청에 실패했어요.');
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let adminBusy = false;
+let adminState = null;
+
+async function runAdmin(action, doneMsg) {
+  if (adminBusy || !STAFF) return;
+  if (!CONFIG.liveUrl) {
+    els.adminMeta.textContent = '실시간 집계(liveUrl)가 연결되지 않았어요.';
+    return;
+  }
+  adminBusy = true;
+  els.hideBtn.disabled = els.openBtn.disabled = true;
+  els.adminMeta.textContent = action === 'status' ? '불러오는 중…' : '적용하는 중…';
+  try {
+    adminState = await adminCall(action);
+    renderAdmin(adminState);
+    if (doneMsg) toast(doneMsg);
+  } catch (e) {
+    els.adminMeta.textContent = e.name === 'AbortError' || e instanceof TypeError
+      ? '연결에 실패했어요. 잠시 후 새로고침을 눌러 주세요.'
+      : e.message;
+  } finally {
+    adminBusy = false;
+    els.hideBtn.disabled = els.openBtn.disabled = !adminState;
+  }
+}
+
+function setStat(node, text, on) {
+  node.textContent = text;
+  node.className = on == null ? '' : on ? 'on' : 'off';
+}
+
+function renderAdmin(d) {
+  const time = new Date(d.updatedAt || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  els.adminMeta.textContent = `${time} 기준`;
+  setStat(els.statVoters, `${d.voters}명`);
+  setStat(els.statHidden, d.hidden ? '숨김' : '공개', !d.hidden);
+  setStat(els.statAccepting, d.accepting ? '접수 중' : '마감', d.accepting);
+  els.hideBtn.textContent = d.hidden ? '순위 공개하기' : '순위 숨기기';
+  els.openBtn.textContent = d.accepting ? '투표 마감하기' : '투표 다시 열기';
+  els.adminList.replaceChildren(...rankRows(d.counts || {}).map((r) => {
+    const li = el('li');
+    li.append(el('span', 'pos', r.votes ? String(r.rank) : '–'), el('span', null, r.emoji), el('span', 'nm', r.name), el('span', 'v', `${r.votes}표`));
+    return li;
+  }));
+  syncClosed(!d.accepting);
+}
+
+// 실수 방지: 한 번 누르면 빨갛게 바뀌고, 3초 안에 한 번 더 눌러야 적용
+function confirmTap(btn, run) {
+  if (btn.classList.contains('armed')) {
+    clearTimeout(btn.armTimer);
+    btn.classList.remove('armed');
+    btn.textContent = btn.dataset.label;
+    run();
+    return;
+  }
+  btn.dataset.label = btn.textContent;
+  btn.classList.add('armed');
+  btn.textContent = '한 번 더 누르면 적용';
+  btn.armTimer = setTimeout(() => {
+    btn.classList.remove('armed');
+    btn.textContent = btn.dataset.label;
+  }, 3000);
+}
+
+els.hideBtn.addEventListener('click', () => confirmTap(els.hideBtn, () => {
+  const hide = !adminState.hidden;
+  runAdmin(hide ? 'hide' : 'show', hide ? '순위를 숨겼어요' : '순위를 공개했어요');
+}));
+els.openBtn.addEventListener('click', () => confirmTap(els.openBtn, () => {
+  const close = adminState.accepting;
+  runAdmin(close ? 'close' : 'open', close ? '투표를 마감했어요' : '투표를 다시 열었어요');
+}));
+els.adminRefresh.addEventListener('click', () => runAdmin('status'));
+
 /* ───────────── 시작 ───────────── */
 
 function init() {
@@ -1379,7 +1536,13 @@ function init() {
   else if (saved && !STAFF) showDone(saved, false);
   else showVoteState('form');
 
+  els.adminTab.hidden = !STAFF;
   setTab(BOARD || params.has('rank') ? 'rank' : 'vote');
+
+  // 운영본부에서 투표를 마감했는지 처음 한 번 확인 (순위 탭은 자체적으로 확인함)
+  if (tab !== 'rank' && CONFIG.liveUrl) {
+    fetchLive().then((d) => { if (d && !d.notConnected) syncClosed(!!d.closed); }).catch(() => {});
+  }
 }
 
 init();
