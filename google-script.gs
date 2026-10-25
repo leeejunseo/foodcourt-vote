@@ -12,12 +12,16 @@
  *
  * 집계 규칙
  * - 같은 사람(기수+중대+이름)이 여러 번 투표하면 '마지막 응답'만 인정 (투표 변경)
- * - 같은 기기(폰)에서 온 표도 '마지막 응답'만 인정. 단, PIN으로 인증된 운영본부 폰은 예외
+ * - 같은 기기(폰)에서 온 표도 '마지막 응답'만 인정. 단, PIN으로 인증된 운영본부 폰은 예외 (코드·PIN을 바꾸기 전에 받은 표 포함)
  * - 한 사람이 같은 부스를 두 번 고른 경우 1표로 처리
  * - 순위: 득표수 → 동점이면 '단독 지지'(그 부스 한 곳만 고른 표) 많은 순 → 그래도 같으면 같은 순위(동점)
  * - 운영본부가 투표를 마감한 동안 들어온 응답은 무효 (구글폼이 받아들여도 집계에서 뺌)
- * - 투표를 마감하면 실시간 순위도 자동으로 숨김 (시상식 때 '순위 공개'로 다시 보여줄 수 있음)
  * - 결과는 '집계' 시트에, 무효가 된 이전 투표는 '이전투표', 마감 중 응답은 '마감후응답' 시트에 기록
+ *
+ * 실시간 순위 공개 단계 (운영본부 탭이나 시트 메뉴에서 바꿈)
+ * - 숨김: 참여자 수만 / TOP 7: 상위 7개 부스 이름만 (순서·득표수 없음, 7위 동점은 모두 포함) / 전체: 순위와 득표수
+ * - 숨김·TOP 7 때는 웹 앱이 득표수를 아예 보내지 않음 → 웹 앱 주소를 직접 열어도 순위를 알 수 없음
+ * - 투표를 마감하면 자동으로 숨김 (시상식 때 '전체 공개'로 다시 보여줄 수 있음)
  */
 const FORM_TITLE = '공군사관학교 축제 푸드코트 맛 대결';
 const FIELDS = ['기수', '중대', '이름', '부스1', '부스2'];
@@ -28,6 +32,8 @@ const RESULT_SHEET = '집계';
 const OLD_SHEET = '이전투표';
 const LATE_SHEET = '마감후응답';
 const CACHE_SECONDS = 15; // 실시간 순위를 다시 계산하는 최소 간격
+const TOP_N = 7; // 'TOP 7' 공개 때 보여줄 부스 수
+const LIVE_MODES = ['hidden', 'top', 'full']; // 실시간 순위 공개 단계: 숨김 | TOP 7 | 전체
 
 // 운영본부 인증: 운영본부 폰에서 '투표주소/?staff=코드' 로 들어온 뒤 PIN 을 입력해야 함.
 // 코드·PIN은 이 파일에 적지 않고 Apps Script '스크립트 속성'에 저장함 (이 파일은 공개 저장소에 올라감).
@@ -40,7 +46,8 @@ function onOpen() {
     .addItem('집계 실행', 'tally')
     .addSeparator()
     .addItem('실시간 순위 숨기기', 'hideLive')
-    .addItem('실시간 순위 공개', 'showLive')
+    .addItem(`실시간 순위 TOP ${TOP_N} 공개`, 'showTop')
+    .addItem('실시간 순위 전체 공개', 'showLive')
     .addSeparator()
     .addItem('투표 마감', 'closeVoting')
     .addItem('투표 다시 열기', 'openVoting')
@@ -89,6 +96,19 @@ function staffToken_() {
   return bytes.map((b) => ((b + 256) % 256).toString(16).padStart(2, '0')).join('').slice(0, 32);
 }
 
+// 예전 코드·PIN의 토큰: 축제 중에 코드·PIN을 바꿔도 그전에 운영본부 폰으로 받은 표가 계속 인정되게 함
+function oldStaffTokens_() {
+  try { return JSON.parse(props_().getProperty('STAFF_OLD_TOKENS') || '[]'); } catch (e) { return []; }
+}
+
+// 기기 제한에서 빠지는 '기기' 칸 값 (지금 토큰 + 예전 토큰)
+function staffDevices_() {
+  const tokens = oldStaffTokens_();
+  const now = staffToken_();
+  if (now) tokens.push(now);
+  return new Set(tokens.map((t) => `staff:${t}`));
+}
+
 // 시트 메뉴에서 실행: 운영본부 링크 코드와 PIN 입력
 function setStaffSecrets() {
   const ui = SpreadsheetApp.getUi();
@@ -102,7 +122,12 @@ function setStaffSecrets() {
   const c = code.getResponseText().trim();
   const p = pin.getResponseText().trim();
   if (!c || !p) return ui.alert('코드와 PIN을 모두 입력해야 합니다. 저장하지 않았습니다.');
+  const before = staffToken_();
   props_().setProperties({ STAFF_CODE: c, STAFF_PIN: p });
+  if (before && before !== staffToken_()) {
+    const old = oldStaffTokens_();
+    if (!old.includes(before)) props_().setProperty('STAFF_OLD_TOKENS', JSON.stringify(old.concat(before)));
+  }
   ui.alert(`저장했습니다.\n\n운영본부 링크: https://leeejunseo.github.io/foodcourt-vote/?staff=${c}\nPIN: ${p}\n\n값을 바꿨다면 운영본부 폰은 다시 로그인해야 합니다.`);
 }
 
@@ -126,7 +151,7 @@ function setClosed_(closed) {
   if (closed && open) periods.push([Date.now(), null]);
   if (!closed && !open) periods[periods.length - 1][1] = Date.now();
   props_().setProperty('CLOSED_PERIODS', JSON.stringify(periods));
-  if (closed) props_().setProperty('LIVE_HIDDEN', '1'); // 마감하면 결과 발표 전까지 순위 비공개
+  if (closed) setLiveMode_('hidden'); // 마감하면 결과 발표 전까지 순위 비공개
   tryRun_(() => form_().setAcceptingResponses(!closed));
   CacheService.getScriptCache().remove('live');
 }
@@ -252,8 +277,7 @@ function computeTally_(ss) {
   });
 
   // 최신 응답부터 보면서, 같은 사람이나 같은 기기에서 이미 더 늦은 표가 있으면 무효
-  const token = staffToken_();
-  const staffDevice = token ? `staff:${token}` : null;
+  const staffDevices = staffDevices_();
   const seenPeople = new Set();
   const seenDevices = new Set();
   const valid = [];
@@ -262,7 +286,7 @@ function computeTally_(ss) {
     if (!norm(r[c.name])) continue;
     const person = [r[c.gisu], r[c.company], r[c.name]].map(norm).join('|');
     const device = dev < 0 ? '' : String(r[dev]).trim();
-    const deviceKey = staffDevice && device === staffDevice ? '' : device; // 인증된 운영본부 폰은 기기 제한 없음
+    const deviceKey = staffDevices.has(device) ? '' : device; // 인증된 운영본부 폰은 기기 제한 없음
     if (seenPeople.has(person) || (deviceKey && seenDevices.has(deviceKey))) {
       replaced.push(r);
       continue;
@@ -303,9 +327,12 @@ function liveData_() {
   const updatedAt = new Date().toISOString();
   const t = computeTally_(spreadsheet_());
   const closed = isClosed_(); // 마감되면 웹페이지가 투표 화면을 닫음
-  // 숨김 중에도 참여자 수는 보여줌 (순위·득표는 비공개)
-  if (props_().getProperty('LIVE_HIDDEN') === '1') return { hidden: true, closed, updatedAt, voters: t.voters };
-  return { hidden: false, closed, updatedAt, voters: t.voters, counts: toObject_(t.counts), solo: toObject_(t.solo) };
+  const mode = liveMode_();
+  // 숨김·TOP 7 때는 득표수를 보내지 않음. 참여자 수는 항상 보여줌.
+  // hidden 은 TOP 7을 모르는 예전 페이지(브라우저 캐시)용 → 그런 페이지에는 숨김으로 보임
+  if (mode === 'hidden') return { mode, hidden: true, closed, updatedAt, voters: t.voters };
+  if (mode === 'top') return { mode, hidden: true, closed, updatedAt, voters: t.voters, topN: TOP_N, top: topBooths_(t) };
+  return { mode, hidden: false, closed, updatedAt, voters: t.voters, counts: toObject_(t.counts), solo: toObject_(t.solo) };
 }
 
 function toObject_(map) {
@@ -314,22 +341,57 @@ function toObject_(map) {
   return obj;
 }
 
-function hideLive() { setLiveHidden_(true); }
-function showLive() { setLiveHidden_(false); }
+// 순위: 득표수 → 단독 지지 순. 둘 다 같으면 같은 순위(1, 1, 3 …)
+function rankBooths_(t) {
+  const ranked = [...t.counts.entries()]
+    .map(([booth, votes]) => ({ booth, votes, solo: t.solo.get(booth) || 0 }))
+    .sort((a, b) => b.votes - a.votes || b.solo - a.solo || a.booth.localeCompare(b.booth, 'ko'));
+  ranked.forEach((r) => {
+    r.rank = 1 + ranked.filter((o) => o.votes > r.votes || (o.votes === r.votes && o.solo > r.solo)).length;
+    r.tied = ranked.filter((o) => o.votes === r.votes && o.solo === r.solo).length > 1;
+  });
+  return ranked;
+}
 
-function setLiveHidden_(hidden) {
-  props_().setProperties({ LIVE_HIDDEN: hidden ? '1' : '0', SHEET_ID: SpreadsheetApp.getActiveSpreadsheet().getId() });
+// TOP 7: 7위 안(동점 포함)인 부스 이름만 가나다순으로 → 응답 순서로도 순위를 알 수 없음
+function topBooths_(t) {
+  return rankBooths_(t).filter((r) => r.rank <= TOP_N).map((r) => r.booth).sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+// 예전 버전은 LIVE_HIDDEN('1' = 숨김)만 있었음 → 처음에는 그 값을 따르고, 숨김이 아니면 TOP 7
+function liveMode_() {
+  const p = props_().getProperties();
+  if (LIVE_MODES.includes(p.LIVE_MODE)) return p.LIVE_MODE;
+  return p.LIVE_HIDDEN === '1' ? 'hidden' : 'top';
+}
+
+function setLiveMode_(mode) {
+  props_().setProperty('LIVE_MODE', mode);
+  props_().deleteProperty('LIVE_HIDDEN');
   CacheService.getScriptCache().remove('live');
-  SpreadsheetApp.getActive().toast(
-    hidden ? '웹페이지에서 순위가 가려집니다.' : '웹페이지에 순위가 다시 표시됩니다.',
-    hidden ? '실시간 순위 숨김' : '실시간 순위 공개'
-  );
+}
+
+function hideLive() { setLiveModeFromMenu_('hidden'); }
+function showTop() { setLiveModeFromMenu_('top'); }
+function showLive() { setLiveModeFromMenu_('full'); }
+
+function setLiveModeFromMenu_(mode) {
+  props_().setProperty('SHEET_ID', SpreadsheetApp.getActiveSpreadsheet().getId());
+  setLiveMode_(mode);
+  const [title, text] = {
+    hidden: ['실시간 순위 숨김', '웹페이지에서 순위가 가려지고 참여자 수만 보입니다.'],
+    top: [`TOP ${TOP_N} 공개`, `웹페이지에 상위 ${TOP_N}개 부스가 순서·득표수 없이 표시됩니다.`],
+    full: ['전체 순위 공개', '웹페이지에 전체 순위와 득표수가 표시됩니다.'],
+  }[mode];
+  SpreadsheetApp.getActive().toast(text, title);
 }
 
 /* ───────────── 운영본부 관리 (운영본부 폰의 웹페이지에서 호출) ───────────── */
 
 // 로그인: { action: 'login', code, pin } → { token }
-// 그 외:  { action, token }  action = status | hide | show | close | open
+// 그 외:  { action, token }  action = status | hide | top | show | close | open
+const MODE_ACTIONS = { hide: 'hidden', top: 'top', show: 'full' };
+
 function doPost(e) {
   const out = (obj) => ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
   let req = {};
@@ -357,7 +419,7 @@ function doPost(e) {
     return out({ ok: false, auth: true, error: '운영본부 인증이 필요해요. 운영본부 링크로 다시 들어와 PIN을 입력해 주세요.' });
   }
 
-  if (req.action === 'hide' || req.action === 'show') props_().setProperty('LIVE_HIDDEN', req.action === 'hide' ? '1' : '0');
+  if (MODE_ACTIONS[req.action]) setLiveMode_(MODE_ACTIONS[req.action]);
   if (req.action === 'close' || req.action === 'open') setClosed_(req.action === 'close');
   if (req.action !== 'status') CacheService.getScriptCache().remove('live');
   // 구글폼의 '응답 받기' 설정을 우리 마감 상태와 맞춰 둠
@@ -368,9 +430,12 @@ function doPost(e) {
 
   // 운영본부에는 순위를 숨긴 상태에서도 전체 득표를 보여줌
   const t = computeTally_(spreadsheet_());
+  const mode = liveMode_();
   return out({
     ok: true,
-    hidden: props_().getProperty('LIVE_HIDDEN') === '1',
+    mode,
+    hidden: mode !== 'full',
+    topN: TOP_N,
     accepting: !isClosed_(),
     late: t.late.length,
     voters: t.voters,
@@ -387,15 +452,11 @@ function tally() {
   props_().setProperty('SHEET_ID', ss.getId());
   const t = computeTally_(ss);
 
-  // 순위: 득표수 → 단독 지지 순. 둘 다 같으면 같은 순위(1, 1, 3 …)로 두고 동점 표시
-  const ranked = [...t.counts.entries()]
-    .map(([booth, votes]) => ({ booth, votes, solo: t.solo.get(booth) || 0 }))
-    .sort((a, b) => b.votes - a.votes || b.solo - a.solo || a.booth.localeCompare(b.booth, 'ko'));
+  // 같은 순위(동점)에 상이 걸리면 표시
+  const ranked = rankBooths_(t);
   ranked.forEach((r) => {
-    r.rank = 1 + ranked.filter((o) => o.votes > r.votes || (o.votes === r.votes && o.solo > r.solo)).length;
-    const tied = ranked.filter((o) => o.votes === r.votes && o.solo === r.solo).length > 1;
     const award = AWARDS[r.rank - 1] || '';
-    r.award = award && tied ? `${award} (동점 — 운영본부 결정 필요)` : award;
+    r.award = award && r.tied ? `${award} (동점 — 운영본부 결정 필요)` : award;
   });
 
   // 집계 시트 작성

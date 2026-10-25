@@ -313,7 +313,12 @@
   .stat b { display: block; margin-top: 2px; font-size: 18px; }
   .stat b.on { color: var(--blue); }
   .stat b.off { color: var(--danger); }
-  .admin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .modes .btn { height: 48px; font-size: 15px; }
+  .modes .btn.current { background: var(--blue-soft); color: var(--blue); box-shadow: inset 0 0 0 2px var(--blue); cursor: default; }
+  .modes .btn.current.armed, .modes .btn.armed { background: var(--danger); color: #fff; box-shadow: none; }
+  .mode-hint { margin-bottom: 16px; }
+  .admin-actions { display: grid; gap: 8px; margin-bottom: 20px; }
   .admin-actions .btn { height: 52px; font-size: 15px; }
   .admin-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; }
   .admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -393,6 +398,8 @@
   .live i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
   .live.off { background: var(--tile); color: var(--muted); }
   .live.off i { animation: none; }
+  .live + .refresh { margin-left: 0; }
+  .refresh:disabled { opacity: .55; cursor: default; }
   .rank-meta { margin: 6px 0 20px; font-size: 13px; color: var(--muted); }
   .rank-hidden { text-align: center; padding: 26px 8px 14px; color: var(--muted); }
   .rank-hidden b { display: block; margin-bottom: 4px; color: var(--ink); font-size: 17px; }
@@ -466,6 +473,24 @@
   .rank.winner .meter i { background: var(--tier); }
   .bump { animation: bump .6s ease; }
 
+  /* TOP 7: 순서·득표수 없이 부스 번호순 */
+  .top-note { margin: -8px 0 14px; font-size: 13px; font-weight: 700; color: var(--tier-ink, #b07a00); }
+  .top-grid { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .top-item {
+    flex: 0 0 calc(50% - 5px);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 10px 14px;
+    border-radius: 18px;
+    background: var(--tile);
+    box-shadow: inset 0 0 0 1.5px rgba(242,176,30,.45);
+    text-align: center;
+  }
+  .top-item.new { animation: pop .45s cubic-bezier(.3,1.5,.5,1); }
+  .top-item .emoji { width: 54px; height: 54px; margin-bottom: 8px; border-radius: 50%; background: var(--card); font-size: 28px; box-shadow: 0 0 0 2.5px var(--gold); }
+  .top-no { font-size: 11.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .top-name { font-size: 15px; line-height: 1.3; word-break: keep-all; }
+  .top-menu { margin-top: 2px; font-size: 12px; line-height: 1.35; color: var(--muted); word-break: keep-all; }
+
   /* ───── 알림 ───── */
   .toast {
     position: fixed; left: 50%; z-index: 30;
@@ -489,7 +514,7 @@
   /* ───── 대형 화면 모드 (?board) ───── */
   body.board { padding-bottom: 24px; }
   body.board .wrap { max-width: 1400px; }
-  body.board .tabs, body.board .banner, body.board .bar { display: none !important; }
+  body.board .tabs, body.board .banner, body.board .bar, body.board #rankRefresh { display: none !important; }
   body.board .hero { padding-block: 22px 66px; }
   body.board .hero-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
   body.board .hero h1 { font-size: 46px; }
@@ -522,6 +547,14 @@
     body.board .rank .name b, body.board .rank .votes { font-size: 18px; }
     body.board .rank .meter { margin-top: 4px; }
     body.board .rank-meta { margin-bottom: 14px; font-size: 15px; }
+    body.board .rank-head h2 { font-size: 28px; }
+    body.board .top-note { margin: -4px 0 22px; font-size: 18px; }
+    body.board .top-grid { gap: 16px; }
+    body.board .top-item { flex-basis: calc(25% - 12px); padding: 26px 14px 22px; border-radius: 24px; }
+    body.board .top-item .emoji { width: 92px; height: 92px; margin-bottom: 14px; font-size: 48px; box-shadow: 0 0 0 4px var(--gold); }
+    body.board .top-no { font-size: 16px; }
+    body.board .top-name { font-size: 26px; }
+    body.board .top-menu { font-size: 16px; }
   }
 
   @keyframes fade { from { opacity: 0; } }
@@ -639,13 +672,19 @@
   <!-- 실시간 순위 -->
   <section class="card" id="rankView" hidden>
     <div class="rank-head">
-      <h2>실시간 맛 순위</h2>
+      <h2 id="rankTitle">실시간 맛 순위</h2>
       <span class="live off" id="liveBadge"><i></i>LIVE</span>
+      <button class="refresh" type="button" id="rankRefresh">새로고침</button>
     </div>
     <p class="rank-meta" id="rankMeta">불러오는 중…</p>
     <div class="rank-hidden" id="rankHidden" hidden>
       <b id="rankHiddenTitle"></b>
       <span id="rankHiddenText"></span>
+    </div>
+    <div class="t1" id="topView" hidden>
+      <p class="top-note" id="topNote"></p>
+      <ol class="top-grid" id="topGrid"></ol>
+      <p class="hint rank-rule">※ 순위와 득표수는 시상식에서 공개됩니다.</p>
     </div>
     <div class="rank-layout" id="rankLayout" hidden>
       <div class="podium" id="podium"></div>
@@ -666,8 +705,14 @@
       <div class="stat"><small>순위</small><b id="statHidden">–</b></div>
       <div class="stat"><small>투표</small><b id="statAccepting">–</b></div>
     </div>
+    <h3 class="admin-sub">공개 화면 순위</h3>
+    <div class="modes" id="modes">
+      <button class="btn ghost" type="button" data-mode="hidden" disabled>숨김</button>
+      <button class="btn ghost" type="button" data-mode="top" disabled>TOP 7</button>
+      <button class="btn ghost" type="button" data-mode="full" disabled>전체 순위</button>
+    </div>
+    <p class="hint mode-hint">숨김: 참여자 수만 · TOP 7: 상위 7곳을 부스 번호순으로(득표수 없음, 7위 동점은 모두) · 전체: 순위와 득표수</p>
     <div class="admin-actions">
-      <button class="btn ghost" type="button" id="hideBtn" disabled>순위 숨기기</button>
       <button class="btn ghost" type="button" id="openBtn" disabled>투표 마감하기</button>
     </div>
     <h3 class="admin-sub">전체 순위 <small class="hint">· 운영본부 전용, 순위를 숨겨도 보여요</small></h3>
@@ -805,10 +850,11 @@ const els = {
   rankView: $('rankView'), rankLayout: $('rankLayout'), podium: $('podium'), ranks: $('ranks'),
   adminTab: $('adminTab'), adminView: $('adminView'), adminRefresh: $('adminRefresh'), adminMeta: $('adminMeta'),
   statVoters: $('statVoters'), statHidden: $('statHidden'), statAccepting: $('statAccepting'),
-  hideBtn: $('hideBtn'), openBtn: $('openBtn'), adminList: $('adminList'), staffOffBtn: $('staffOffBtn'),
+  modes: $('modes'), openBtn: $('openBtn'), adminList: $('adminList'), staffOffBtn: $('staffOffBtn'),
   pinSheet: $('pinSheet'), pinForm: $('pinForm'), pinInput: $('pinInput'), pinError: $('pinError'),
   pinOk: $('pinOk'), pinCancel: $('pinCancel'),
-  rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
+  rankTitle: $('rankTitle'), rankRefresh: $('rankRefresh'), rankMeta: $('rankMeta'), rankHidden: $('rankHidden'), liveBadge: $('liveBadge'),
+  topView: $('topView'), topNote: $('topNote'), topGrid: $('topGrid'),
 };
 
 // 안전하게 요소를 만드는 도우미 (textContent 사용)
@@ -1273,8 +1319,8 @@ let prevVotes = {};
 
 function startLive() {
   if (liveTimer) return;
-  refreshLive();
   liveTimer = setInterval(refreshLive, CONFIG.liveRefreshSec * 1000);
+  return refreshLive();
 }
 function stopLive() {
   clearInterval(liveTimer);
@@ -1311,32 +1357,69 @@ async function refreshLive() {
   }
 }
 
+// 새로고침: 바로 다시 불러오고, 자동 갱신 간격도 처음부터 다시 셈
+els.rankRefresh.addEventListener('click', async () => {
+  if (liveBusy) return;
+  els.rankRefresh.disabled = true;
+  stopLive();
+  await startLive();
+  els.rankRefresh.disabled = false;
+});
+
+// 공개 단계: hidden(숨김) | top(TOP 7) | full(전체). 예전 서버는 mode 없이 hidden 만 보냄
+const liveModeOf = (d) => d.mode || (d.hidden ? 'hidden' : 'full');
+
+// 안내 문구 / TOP 7 / 전체 순위 중 하나만 보여줌
+function showRankPart(part) {
+  els.rankHidden.hidden = part !== 'message';
+  els.topView.hidden = part !== 'top';
+  els.rankLayout.hidden = part !== 'full';
+}
+
 function showRankMessage(title, text) {
   $('rankHiddenTitle').textContent = title;
   $('rankHiddenText').textContent = text;
-  els.rankHidden.hidden = false;
-  els.rankLayout.hidden = true;
+  showRankPart('message');
   els.rankMeta.textContent = '';
 }
 
 function renderLive(data, failed) {
-  els.liveBadge.classList.toggle('off', failed || !data || data.hidden || data.notConnected);
+  const mode = data && !data.notConnected ? liveModeOf(data) : null;
+  els.liveBadge.classList.toggle('off', failed || !mode || mode === 'hidden');
   if (!data) {
     els.rankMeta.textContent = '순위를 불러오지 못했어요. 잠시 후 다시 시도합니다.';
     return;
   }
   if (data.notConnected) return showRankMessage('실시간 순위 준비 중이에요', '곧 순위가 표시됩니다.');
   if (!failed) syncClosed(!!data.closed);
-  if (data.hidden) {
+  els.rankTitle.textContent = mode === 'top' ? `지금 맛 TOP ${data.topN || 7}` : '실시간 맛 순위';
+  if (mode === 'hidden') {
     const joined = data.voters ? `지금까지 ${data.voters}명이 투표했어요. ` : '';
     return showRankMessage('지금은 순위가 비공개예요', `${joined}결과는 시상식에서 발표됩니다.`);
   }
-  els.rankHidden.hidden = true;
+  if (mode === 'top' && !(data.top || []).length) return showRankMessage('아직 투표가 없어요', '맛있게 드셨다면 첫 번째로 투표해 주세요!');
   const time = new Date(data.updatedAt || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   els.rankMeta.textContent = failed
     ? `연결이 불안정해요 · ${time} 기준 결과`
     : `참여 ${data.voters || 0}명 · ${time} 기준 · ${CONFIG.liveRefreshSec}초마다 갱신`;
+  if (mode === 'top') return renderTop(data.top, data.topN || 7);
+  showRankPart('full');
   renderRanks(data.counts || {}, data.solo || {});
+}
+
+// TOP 7: 순위·득표수 없이 부스 번호순 (서버도 이름만 보냄). 새로 들어온 부스만 살짝 튀게 함
+let prevTop = [];
+function renderTop(names, topN) {
+  const rows = BOOTHS.filter((b) => names.includes(b.name));
+  showRankPart('top');
+  els.topNote.textContent = '부스 번호순 · 순위와 관계없어요' + (rows.length > topN ? ` · 동점 포함 ${rows.length}곳` : '');
+  els.topGrid.replaceChildren(...rows.map((b) => {
+    const li = el('li', prevTop.includes(b.name) ? 'top-item' : 'top-item new');
+    li.append(el('span', 'emoji', b.emoji), el('span', 'top-no', `${b.no}번`), el('b', 'top-name', b.name));
+    if (b.menu) li.append(el('span', 'top-menu', b.menu));
+    return li;
+  }));
+  prevTop = names;
 }
 
 // 순위: 득표수 → 동점이면 단독 지지(그 부스 한 곳만 고른 표) → 그래도 같으면 같은 순위(동점)
@@ -1369,7 +1452,6 @@ function renderRanks(counts, solo) {
   const rows = rankRows(counts, solo);
   const max = Math.max(1, ...rows.map((r) => r.votes));
   const top = rows.slice(0, 3).filter((r) => r.votes > 0);
-  els.rankLayout.hidden = false;
   renderPodium(top);
   renderList(rows.filter((r) => !top.includes(r)), max);
   prevVotes = Object.fromEntries(rows.map((r) => [r.name, r.votes]));
@@ -1520,6 +1602,17 @@ els.staffOffBtn.addEventListener('click', () => confirmTap(els.staffOffBtn, () =
 let adminBusy = false;
 let adminState = null;
 
+// 공개 화면 순위 단계 → [운영본부 요청, 완료 문구, 현황 표시]
+const MODE_ACTIONS = {
+  hidden: ['hide', '순위를 숨겼어요', '숨김'],
+  top: ['top', 'TOP 7만 공개했어요', 'TOP 7'],
+  full: ['show', '전체 순위를 공개했어요', '전체 공개'],
+};
+
+function setAdminDisabled(disabled) {
+  for (const btn of [...els.modes.querySelectorAll('button'), els.openBtn]) btn.disabled = disabled;
+}
+
 async function runAdmin(action, doneMsg) {
   if (adminBusy || !STAFF) return;
   if (!CONFIG.liveUrl) {
@@ -1527,19 +1620,22 @@ async function runAdmin(action, doneMsg) {
     return;
   }
   adminBusy = true;
-  els.hideBtn.disabled = els.openBtn.disabled = true;
+  setAdminDisabled(true);
   els.adminMeta.textContent = action === 'status' ? '불러오는 중…' : '적용하는 중…';
   try {
     adminState = await adminCall(action);
     renderAdmin(adminState);
-    if (doneMsg) toast(doneMsg);
+    // 예전 서버는 'top' 요청을 모르고 그냥 현황만 돌려줌
+    const want = Object.keys(MODE_ACTIONS).find((m) => MODE_ACTIONS[m][0] === action);
+    if (want && liveModeOf(adminState) !== want) els.adminMeta.textContent = '이 기능이 아직 서버에 없어요. Apps Script를 새 버전으로 배포해 주세요.';
+    else if (doneMsg) toast(doneMsg);
   } catch (e) {
     els.adminMeta.textContent = e.name === 'AbortError' || e instanceof TypeError
       ? '연결에 실패했어요. 잠시 후 새로고침을 눌러 주세요.'
       : e.message;
   } finally {
     adminBusy = false;
-    els.hideBtn.disabled = els.openBtn.disabled = !adminState;
+    setAdminDisabled(!adminState);
   }
 }
 
@@ -1551,10 +1647,11 @@ function setStat(node, text, on) {
 function renderAdmin(d) {
   const time = new Date(d.updatedAt || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   els.adminMeta.textContent = `${time} 기준` + (d.late ? ` · 마감 중 들어온 응답 ${d.late}건은 집계에서 제외됨` : '');
+  const mode = liveModeOf(d);
   setStat(els.statVoters, `${d.voters}명`);
-  setStat(els.statHidden, d.hidden ? '숨김' : '공개', !d.hidden);
+  setStat(els.statHidden, MODE_ACTIONS[mode][2], mode !== 'hidden');
   setStat(els.statAccepting, d.accepting ? '접수 중' : '마감', d.accepting);
-  els.hideBtn.textContent = d.hidden ? '순위 공개하기' : '순위 숨기기';
+  for (const btn of els.modes.querySelectorAll('button')) btn.classList.toggle('current', btn.dataset.mode === mode);
   els.openBtn.textContent = d.accepting ? '투표 마감하기' : '투표 다시 열기';
   els.adminList.replaceChildren(...rankRows(d.counts || {}, d.solo || {}).map((r) => {
     const li = el('li');
@@ -1566,7 +1663,7 @@ function renderAdmin(d) {
 }
 
 // 실수 방지: 한 번 누르면 빨갛게 바뀌고, 3초 안에 한 번 더 눌러야 적용
-function confirmTap(btn, run) {
+function confirmTap(btn, run, armedText = '한 번 더 누르면 적용') {
   if (btn.classList.contains('armed')) {
     clearTimeout(btn.armTimer);
     btn.classList.remove('armed');
@@ -1576,17 +1673,19 @@ function confirmTap(btn, run) {
   }
   btn.dataset.label = btn.textContent;
   btn.classList.add('armed');
-  btn.textContent = '한 번 더 누르면 적용';
+  btn.textContent = armedText;
   btn.armTimer = setTimeout(() => {
     btn.classList.remove('armed');
     btn.textContent = btn.dataset.label;
   }, 3000);
 }
 
-els.hideBtn.addEventListener('click', () => confirmTap(els.hideBtn, () => {
-  const hide = !adminState.hidden;
-  runAdmin(hide ? 'hide' : 'show', hide ? '순위를 숨겼어요' : '순위를 공개했어요');
-}));
+els.modes.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn || !adminState || btn.classList.contains('current')) return;
+  const [action, doneMsg] = MODE_ACTIONS[btn.dataset.mode];
+  confirmTap(btn, () => runAdmin(action, doneMsg), '한 번 더');
+});
 els.openBtn.addEventListener('click', () => confirmTap(els.openBtn, () => {
   const close = adminState.accepting;
   runAdmin(close ? 'close' : 'open', close ? '투표를 마감하고 순위를 숨겼어요' : '투표를 다시 열었어요');
