@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#06122b">
-<title>푸드코트 맛 대결</title>
+<title>성무슐랭</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <style>
@@ -97,7 +97,7 @@
     border: 1px solid rgba(255,255,255,.16);
     font-size: 12.5px; font-weight: 600;
   }
-  .hero h1 { margin: 0; font-size: 36px; line-height: 1.15; font-weight: 800; letter-spacing: -.035em; }
+  .hero h1 { margin: 0; font-size: 46px; line-height: 1.1; font-weight: 800; letter-spacing: -.035em; }
   .hero h1 em {
     font-style: normal;
     background: linear-gradient(90deg, #ffe08a, #f2b01e 55%, #ffb347);
@@ -517,9 +517,8 @@
   body.board .tabs, body.board .banner, body.board .bar, body.board #rankRefresh { display: none !important; }
   body.board .hero { padding-block: 22px 66px; }
   body.board .hero-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
-  body.board .hero h1 { font-size: 46px; }
-  body.board .hero h1 br, body.board .lead, body.board .rule, body.board .rank-rule { display: none; }
-  body.board .hero h1 em { margin-left: .25em; }
+  body.board .hero h1 { font-size: 56px; }
+  body.board .lead, body.board .rule, body.board .rank-rule { display: none; }
   body.board .prizes { margin: 0; width: min(100%, 460px); }
   @media (min-width: 1000px) {
     body.board .card { padding: 28px 32px; }
@@ -766,7 +765,8 @@
    ================================================================ */
 const CONFIG = {
   festival: '공군사관학교 · 2026 성무제',
-  title: '푸드코트 맛 대결', // 첫 단어 다음 줄은 금색으로 표시됨
+  title: '성무슐랭',
+  titleGold: '슐랭', // 제목 끝에서 금색으로 표시할 부분
 
   // 구글 시트 '설정' 탭의 '웹페이지 연결 링크'를 그대로 붙여넣으세요.
   // 비워두면 테스트 모드로 동작합니다(실제로 저장되지 않음).
@@ -1696,8 +1696,8 @@ els.adminRefresh.addEventListener('click', () => runAdmin('status'));
 
 function init() {
   $('festival').textContent = CONFIG.festival;
-  const [first, ...rest] = CONFIG.title.split(' ');
-  $('title').replaceChildren(first, el('br'), el('em', null, rest.join(' ')));
+  const gold = CONFIG.titleGold && CONFIG.title.endsWith(CONFIG.titleGold) ? CONFIG.titleGold : '';
+  $('title').replaceChildren(CONFIG.title.slice(0, CONFIG.title.length - gold.length), el('em', null, gold));
   $('maxText').textContent = CONFIG.maxPicks;
   document.title = CONFIG.title;
   document.body.classList.toggle('board', BOARD);
